@@ -28,6 +28,9 @@ public:
     double voltagePhaseA;
     double voltagePhaseB;
     double voltagePhaseC;
+
+    double currentPhaseA;
+
     double frequency;
 
 

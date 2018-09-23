@@ -166,13 +166,15 @@ void ModbusListener::readReady()
             const QString entry = tr("%1").arg(QString::number(unit.value(i), 10 ));
             ui->readValue->addItem(entry);
             strList->append( entry );
-            if ( i== 34)
+            if ( i == 34)
                 voltagePhaseA = entry.toDouble() / 10;
-            if ( i== 35)
+            if ( i == 35)
                 voltagePhaseB = entry.toDouble() / 10;
-            if ( i== 36)
+            if ( i == 36)
                 voltagePhaseC = entry.toDouble() / 10;
-            if ( i== 43)
+            if ( i == 39 )
+                currentPhaseA = entry.toDouble() / 1000;
+            if ( i == 43)
                 frequency = entry.toDouble() / 100;
 
 

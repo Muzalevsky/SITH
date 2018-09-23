@@ -22,7 +22,6 @@ public:
     ~BenchWindow();
 private:
     QTimer              *timer;
-
     void initializeWindow();
 
     Port                *force_serial;
@@ -39,12 +38,14 @@ private:
     QLineEdit       *voltageB_edit;
     QLineEdit       *voltageC_edit;
     QLineEdit       *frequency_edit;
-
-
+    QLineEdit       *currentA_edit;
+    QLineEdit       *resistance_edit;
 
     double              voltagePhaseA;
     double              voltagePhaseB;
     double              voltagePhaseC;
+    double              currentPhaseA;
+    double              resistance;
     double              frequency;
 
     QGridLayout         *grid_layout;
@@ -62,10 +63,8 @@ public slots:
     void openForce();
     void openModbus();
     void getVoltage();
-
     void errorHandler( QString );
     void updateForceEdit();
-
 
 };
 
