@@ -74,6 +74,7 @@ public:
         int stopBits = QSerialPort::OneStop;
         int responseTime = 1000;
         int numberOfRetries = 3;
+        int flow = QSerialPort::NoFlowControl;
     };
 
     explicit SettingsDialog(QWidget *parent = nullptr);

@@ -7,11 +7,9 @@ BenchWindow::BenchWindow(QWidget *parent) : QMainWindow( parent )
 {
     initializeWindow();
 
-
     timer = new QTimer();
 //    timer->setInterval(1000);
 //    connect( timer, &QTimer::timeout, this, &BenchWindow::updateForceEdit );
-
 
     //Default
     force_serial->setPortSettings( QString( "//./COM5" ), 9600, 8, 0, 0, 0 );
@@ -38,6 +36,12 @@ BenchWindow::BenchWindow(QWidget *parent) : QMainWindow( parent )
     connect(thread_Modbus, SIGNAL(finished()), rs485_serial, SLOT(deleteLater()));//Удалить к чертям поток
     thread_Modbus->start();
 
+
+    //Stepper thread
+    QThread *thread_Stepper = new QThread;
+    stepper_serial->moveToThread(thread_Stepper);
+    connect(thread_Stepper, SIGNAL(finished()), stepper_serial, SLOT(deleteLater()));//Удалить к чертям поток
+    thread_Stepper->start();
 }
 
 BenchWindow::~BenchWindow()
@@ -53,11 +57,11 @@ void BenchWindow::initializeWindow()
     force_serial    = new Port();
     force_ui        = new ForceWindow( force_serial, this);
 
-    rs485_serial = new ModbusListener();
+    rs485_serial    = new ModbusListener();
     connect( rs485_serial, &ModbusListener::getReply, this, &BenchWindow::getVoltage);
 
-    stepper_serial = new Port();
-    stepper_ui = new StepperControl(this);
+    stepper_serial  = new Port();
+    stepper_ui      = new StepperControl( stepper_serial, this);
 
     layout_work     = new QGridLayout(workWidget);
     forceEdit       = new QLineEdit();
@@ -100,8 +104,8 @@ void BenchWindow::initializeWindow()
     layout_work->addWidget( currentA_edit, 4, 3, 1, 1 );
     layout_work->addWidget( resistance_lbl, 5, 2, 1, 1 );
     layout_work->addWidget( resistance_edit, 5, 3, 1, 1 );
-    layout_work->addWidget( stepForward, 6, 1, 1, 1 );
-    layout_work->addWidget( stepBackward, 6, 2, 1, 1 );
+    layout_work->addWidget( stepForward, 6, 2, 1, 1 );
+    layout_work->addWidget( stepBackward, 6, 3, 1, 1 );
 
     layout_work->setHorizontalSpacing( 10 );
     layout_work->setVerticalSpacing( 10 );
@@ -109,13 +113,7 @@ void BenchWindow::initializeWindow()
     mainWgt = new QTabWidget(this);
     mainWgt->addTab( workWidget, tr("Work") );
 
-    layout_tune             = new QGridLayout(tuneWidget);
-    force_serialButton      = new QPushButton( "Force" );
-    connect( force_serialButton, SIGNAL( pressed() ), this, SLOT( openForce() ) );
-    rs485_serialButton      = new QPushButton( "RS485" );
-    connect( rs485_serialButton, SIGNAL( pressed() ), this, SLOT( openModbus() ) );
-    stepper_serialButton    = new QPushButton( "Stepper" );
-
+    layout_tune = new QGridLayout(tuneWidget);
     layout_tune->addWidget( force_ui, 1, 1, 1, 1 );
     layout_tune->addWidget( rs485_serial, 2, 1, 1, 1 );
     layout_tune->addWidget( stepper_ui, 1, 2, 1, 1 );
@@ -184,16 +182,6 @@ void BenchWindow::sendStepBackward()
     stepper_serial->WriteToPort( command );
     qDebug() << "step-";
 
-}
-
-void BenchWindow::openForce()
-{
-    force_ui->show();
-}
-
-void BenchWindow::openModbus()
-{
-    rs485_serial->show();
 }
 
 void BenchWindow::errorHandler( QString err )

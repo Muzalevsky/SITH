@@ -2,36 +2,51 @@
 
 #include <cstdlib>
 
-StepperControl::StepperControl( QWidget* parent ) : QMainWindow( parent )
+#include <QDebug>
+StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent )
 {
+    port = ext_port;
     gridLayout = new QGridLayout();
     speedEdit       = new QLineEdit();
     stepNumberEdit  = new QLineEdit();
     stepSizeEdit    = new QLineEdit();
     initBtn = new QPushButton("Init", this);
     sendBtn = new QPushButton("Send", this);
+    PortNameBox = new QComboBox();
 
-    gridLayout->addWidget(new QLabel(tr("Set speed: ")),1,1,1,1);
-    gridLayout->addWidget(new QLabel(tr("Set step number: ")),2,1,1,1);
-    gridLayout->addWidget(new QLabel(tr("Set step size (mm): ")),3,1,1,1);
-    gridLayout->addWidget(speedEdit,1,2,1,1);
-    gridLayout->addWidget(stepNumberEdit,2,2,1,1);
-    gridLayout->addWidget(stepSizeEdit,3,2,1,1);
+    m_settingsDialog = new SettingsDialog(this);
 
-    gridLayout->addWidget(initBtn,4,1,1,1);
-    gridLayout->addWidget(sendBtn,4,2,1,1);
+    gridLayout->addWidget(new QLabel(tr("Stepper Port: ")),1,1,1,1);
+    gridLayout->addWidget(PortNameBox,1,2,1,1);
 
-//    setButton = new QPushButton( "Set" );
-//    connect( setButton, SIGNAL(pressed() ), this, SLOT( saveSettings() ));
-//    gridLayout->addWidget( setButton, 5,1,1,1);
+    gridLayout->addWidget(new QLabel(tr("Set speed: ")),2,1,1,1);
+    gridLayout->addWidget(new QLabel(tr("Set step number: ")),3,1,1,1);
+    gridLayout->addWidget(new QLabel(tr("Set step size (mm): ")),4,1,1,1);
+    gridLayout->addWidget(speedEdit,2,2,1,1);
+    gridLayout->addWidget(stepNumberEdit,3,2,1,1);
+    gridLayout->addWidget(stepSizeEdit,4,2,1,1);
 
-//    openButton = new QPushButton( "Open" );
-//    connect( openButton, SIGNAL(pressed() ), port, SLOT( openPort() ));
-//    gridLayout->addWidget( openButton, 5,2,1,1);
+    gridLayout->addWidget(initBtn,5,1,1,1);
+    gridLayout->addWidget(sendBtn,5,2,1,1);
 
-//    QPushButton *searchButton = new QPushButton( "Search" );
-//    connect( searchButton, SIGNAL(pressed() ), this, SLOT( searchPorts() ));
-//    gridLayout->addWidget( searchButton, 5,3,1,1);
+    QPushButton *optionsButton = new QPushButton( "Options" );
+    connect( optionsButton, &QPushButton::clicked, m_settingsDialog, &QDialog::show);
+    gridLayout->addWidget( optionsButton, 6,1,1,1);
+
+    setButton = new QPushButton( "Set" );
+    connect( setButton, &QPushButton::clicked, this, &StepperControl::saveSettings );
+    gridLayout->addWidget( setButton, 7,1,1,1);
+
+    openButton = new QPushButton( "Open" );
+    connect( openButton, &QPushButton::clicked, port, &Port::openPort );
+    gridLayout->addWidget( openButton, 7,2,1,1);
+
+    QPushButton *searchButton = new QPushButton( "Search" );
+    connect( searchButton, &QPushButton::clicked, this, &StepperControl::searchPorts );
+    gridLayout->addWidget( searchButton, 7,3,1,1);
+
+
+
 
     QWidget* mainWidget = new QWidget;
     mainWidget->setLayout( gridLayout );
@@ -63,4 +78,41 @@ void StepperControl::sendPassword()
     cmd->XOR_SUM=0x00;
     cmd->XOR_SUM=xor_sum((uint8_t*)&cmd->XOR_SUM, sizeof(cmd));
 
+}
+
+void StepperControl::request()
+{
+
+}
+
+void StepperControl::response()
+{
+
+}
+
+void StepperControl::powerStep01()
+{
+
+}
+
+void StepperControl::searchPorts()
+{
+    PortNameBox->clear();
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+    {
+        PortNameBox->addItem(info.portName());
+    }
+    qDebug() << "Stepper port search.";
+}
+
+void StepperControl::saveSettings()
+{
+    port->setPortSettings( PortNameBox->currentText(),
+                           m_settingsDialog->settings().baud,
+                           m_settingsDialog->settings().dataBits,
+                           m_settingsDialog->settings().parity,
+                           m_settingsDialog->settings().stopBits,
+                           QSerialPort::NoFlowControl );
+
+    qDebug() << "New stepper port settings saved.";
 }

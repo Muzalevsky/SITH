@@ -5,10 +5,6 @@ Port::Port(QObject *parent) :
     QObject(parent)
 {
     qDebug() << "new port" << this;
-//    sw = new SettingsWindow( force_serial, this);
-//    connect( sw->setButton, &QPushButton::clicked, this, &Port::openPort );
-//    sw->show();
-
     force_str = new QString();
 }
 
@@ -36,29 +32,24 @@ void Port::setPortSettings(QString name, int baudrate,int DataBits,
 
 void Port::openPort()
 {
+    qDebug() << "openPort():";
     thisPort.setPortName(SettingsPort.name);
     if (thisPort.open(QIODevice::ReadWrite)) {
         if ( thisPort.setBaudRate(SettingsPort.baudRate) &&
              thisPort.setDataBits(SettingsPort.dataBits) &&
              thisPort.setParity(SettingsPort.parity) &&
              thisPort.setStopBits(SettingsPort.stopBits) &&
-             thisPort.setFlowControl(SettingsPort.flowControl) )
-        {
-            if ( thisPort.isOpen() )
-            {
-                error_((SettingsPort.name+ " >> Открыт!\r").toLocal8Bit());
+             thisPort.setFlowControl(SettingsPort.flowControl) ) {
+            if ( thisPort.isOpen() ) {
+                error_((SettingsPort.name + " >> Открыт!\r").toLocal8Bit());
             }
             qDebug() << "open port";
 
-        }
-        else
-        {
+        } else {
             thisPort.close();
             error_(thisPort.errorString().toLocal8Bit());
         }
-    }
-    else
-    {
+    } else {
         thisPort.close();
         error_(thisPort.errorString().toLocal8Bit());
     }
@@ -66,18 +57,15 @@ void Port::openPort()
 
 void Port::handleError(QSerialPort::SerialPortError error)
 {
-    if ( (thisPort.isOpen()) && (error == QSerialPort::ResourceError) )
-    {
+    if ( (thisPort.isOpen()) && (error == QSerialPort::ResourceError) ) {
         error_(thisPort.errorString().toLocal8Bit());
         closePort();
     }
 }
 
-
 void Port::closePort()
 {
-    if( thisPort.isOpen() )
-    {
+    if ( thisPort.isOpen() ) {
         thisPort.close();
         error_(SettingsPort.name.toLocal8Bit() + " >> Закрыт!\r");
     }
@@ -85,8 +73,7 @@ void Port::closePort()
 
 void Port::WriteToPort(QByteArray data)
 {
-    if( thisPort.isOpen() )
-    {
+    if ( thisPort.isOpen() ) {
         thisPort.write(data);
     }
 }
@@ -96,6 +83,5 @@ void Port::ReadInPort()
     QByteArray data;
     data.append(thisPort.readAll());
     outPort(data);
-
 }
 

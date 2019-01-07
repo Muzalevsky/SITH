@@ -22,7 +22,6 @@ ModbusListener::ModbusListener(QWidget *parent)
 
     timer = new QTimer();
     timer->setInterval(1000);
-
     connect( timer, &QTimer::timeout, this, &ModbusListener::on_readButton_clicked );
 
     ui->setupUi(this);
@@ -58,7 +57,9 @@ void ModbusListener::initActions()
     connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
     connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
 
+
     connect(ui->readButton, &QPushButton::clicked, this, ModbusListener::on_readButton_clicked);
+    connect(ui->optionsButton, &QPushButton::clicked, m_settingsDialog, &QDialog::show);
 }
 
 void ModbusListener::on_connectType_currentIndexChanged(int index)
@@ -202,4 +203,3 @@ QModbusDataUnit ModbusListener::readRequest() const
     int numberOfEntries = 50;
     return QModbusDataUnit(table, startAddress, numberOfEntries);
 }
-

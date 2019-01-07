@@ -56,11 +56,11 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui(new Ui::SettingsDialog)
 {
     ui->setupUi(this);
-
     ui->parityCombo->setCurrentIndex(0);
     ui->baudCombo->setCurrentText(QString::number(m_settings.baud));
     ui->dataBitsCombo->setCurrentText(QString::number(m_settings.dataBits));
     ui->stopBitsCombo->setCurrentText(QString::number(m_settings.stopBits));
+    ui->FlowCombo->setCurrentText(QString::number(m_settings.flow));
     ui->timeoutSpinner->setValue(m_settings.responseTime);
     ui->retriesSpinner->setValue(m_settings.numberOfRetries);
 
@@ -73,6 +73,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
         m_settings.stopBits = ui->stopBitsCombo->currentText().toInt();
         m_settings.responseTime = ui->timeoutSpinner->value();
         m_settings.numberOfRetries = ui->retriesSpinner->value();
+        m_settings.flow = ui->FlowCombo->currentIndex();
 
         hide();
     });

@@ -140,6 +140,13 @@
      </layout>
     </item>
     <item>
+     <widget class="QPushButton" name="optionsButton">
+      <property name="text">
+       <string>Options</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QGroupBox" name="groupBox_2">
@@ -238,7 +245,7 @@
      <x>0</x>
      <y>0</y>
      <width>556</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuDevice">
@@ -291,5 +298,6 @@
   <tabstop>writeTable</tabstop>
   <tabstop>readButton</tabstop>
  </tabstops>
+ <resources/>
  <connections/>
 </ui>

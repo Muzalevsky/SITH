@@ -10,8 +10,8 @@
 
 #include "port.h"
 #include "forcewindow.h"
-#include <steppercontrol.h>
-#include <modbuslistener.h>
+#include "steppercontrol.h"
+#include "modbuslistener.h"
 
 class BenchWindow : public QMainWindow
 {
@@ -31,9 +31,6 @@ private:
     StepperControl      *stepper_ui;
     QString             force_str;
     QTabWidget          *mainWgt;
-    QPushButton     *force_serialButton;
-    QPushButton     *rs485_serialButton;
-    QPushButton     *stepper_serialButton;
 
     QLineEdit       *voltageA_edit;
     QLineEdit       *voltageB_edit;
@@ -65,8 +62,6 @@ public slots:
     void setForceValue( QString );
     void sendStepForward();
     void sendStepBackward();
-    void openForce();
-    void openModbus();
     void getVoltage();
     void errorHandler( QString );
     void updateForceEdit();
