@@ -7,17 +7,13 @@ BenchWindow::BenchWindow(QWidget *parent) : QMainWindow( parent )
 {
     initializeWindow();
 
-    force_serial = new Port();
-    force_ui = new ForceWindow( force_serial, this);
 
     timer = new QTimer();
 //    timer->setInterval(1000);
 //    connect( timer, &QTimer::timeout, this, &BenchWindow::updateForceEdit );
 
-    rs485_serial = new ModbusListener();
-    connect( rs485_serial, &ModbusListener::getReply, this, &BenchWindow::getVoltage);
 
-    stepper_serial = new Port();
+    //Default
     force_serial->setPortSettings( QString( "//./COM5" ), 9600, 8, 0, 0, 0 );
     stepper_serial->setPortSettings( QString( "//./COM4" ), 115200, 8, 0, 0, 0 );
 
@@ -51,20 +47,26 @@ BenchWindow::~BenchWindow()
 
 void BenchWindow::initializeWindow()
 {
-    grid_layout         = new QGridLayout();
-    forceEdit = new QLineEdit();
+    workWidget      = new QWidget( this );
+    tuneWidget      = new QWidget( this );
+
+    force_serial    = new Port();
+    force_ui        = new ForceWindow( force_serial, this);
+
+    rs485_serial = new ModbusListener();
+    connect( rs485_serial, &ModbusListener::getReply, this, &BenchWindow::getVoltage);
+
+    stepper_serial = new Port();
+    stepper_ui = new StepperControl(this);
+
+    layout_work     = new QGridLayout(workWidget);
+    forceEdit       = new QLineEdit();
     forceEdit->setReadOnly( true );
-
-    force_serialButton      = new QPushButton( "Force" );
-    connect( force_serialButton, SIGNAL( pressed() ), this, SLOT( openForce() ) );
-    rs485_serialButton      = new QPushButton( "RS485" );
-    connect( rs485_serialButton, SIGNAL( pressed() ), this, SLOT( openModbus() ) );
-    stepper_serialButton    = new QPushButton( "Stepper" );
-
-    QLabel *voltage_lbl     = new QLabel( "Voltage: " );
-    QLabel *frequency_lbl   = new QLabel( "Frequency: " );
-    QLabel *current_lbl     = new QLabel( "Current: " );
-    QLabel *resistance_lbl  = new QLabel( "Resistance: " );
+    QLabel *force_lbl       = new QLabel( tr("Force") );
+    QLabel *voltage_lbl     = new QLabel( tr("Voltage: ") );
+    QLabel *frequency_lbl   = new QLabel( tr("Frequency: ") );
+    QLabel *current_lbl     = new QLabel( tr("Current: ") );
+    QLabel *resistance_lbl  = new QLabel( tr("Resistance: ") );
 
     voltageA_edit           = new QLineEdit();
     voltageB_edit           = new QLineEdit();
@@ -85,29 +87,42 @@ void BenchWindow::initializeWindow()
     QPushButton *stepBackward = new QPushButton( "Step -" );
     connect( stepBackward, SIGNAL( pressed() ), this, SLOT( sendStepBackward() )  );
 
-    grid_layout->addWidget( force_serialButton, 1, 1, 1, 1 );
-    grid_layout->addWidget( rs485_serialButton, 2, 1, 1, 1 );
-    grid_layout->addWidget( stepper_serialButton, 3, 1, 1, 1 );
-    grid_layout->addWidget( forceEdit, 1, 2, 1, 1 );
-    grid_layout->addWidget( voltage_lbl, 2, 2, 1, 1 );
-    grid_layout->addWidget( voltageA_edit, 3, 2, 1, 1 );
-    grid_layout->addWidget( voltageB_edit, 4, 2, 1, 1 );
-    grid_layout->addWidget( voltageC_edit, 5, 2, 1, 1 );
-    grid_layout->addWidget( frequency_lbl, 6, 2, 1, 1 );
-    grid_layout->addWidget( frequency_edit, 7, 2, 1, 1 );
-    grid_layout->addWidget( current_lbl, 2, 3, 1, 1 );
-    grid_layout->addWidget( currentA_edit, 3, 3, 1, 1 );
-    grid_layout->addWidget( resistance_lbl, 2, 4, 1, 1 );
-    grid_layout->addWidget( resistance_edit, 3, 4, 1, 1 );
-    grid_layout->addWidget( stepForward, 4, 1, 1, 1 );
-    grid_layout->addWidget( stepBackward, 5, 1, 1, 1 );
 
-    grid_layout->setHorizontalSpacing( 10 );
-    grid_layout->setVerticalSpacing( 10 );
+    layout_work->addWidget( force_lbl, 1, 2, 1, 1 );
+    layout_work->addWidget( forceEdit, 1, 3, 1, 1 );
+    layout_work->addWidget( voltage_lbl, 2, 2, 1, 1 );
+    layout_work->addWidget( voltageA_edit, 2, 3, 1, 1 );
+    layout_work->addWidget( voltageB_edit, 2, 4, 1, 1 );
+    layout_work->addWidget( voltageC_edit, 2, 5, 1, 1 );
+    layout_work->addWidget( frequency_lbl, 3, 2, 1, 1 );
+    layout_work->addWidget( frequency_edit, 3, 3, 1, 1 );
+    layout_work->addWidget( current_lbl, 4, 2, 1, 1 );
+    layout_work->addWidget( currentA_edit, 4, 3, 1, 1 );
+    layout_work->addWidget( resistance_lbl, 5, 2, 1, 1 );
+    layout_work->addWidget( resistance_edit, 5, 3, 1, 1 );
+    layout_work->addWidget( stepForward, 6, 1, 1, 1 );
+    layout_work->addWidget( stepBackward, 6, 2, 1, 1 );
 
-    QWidget* mainWidget = new QWidget;
-    mainWidget->setLayout( grid_layout );
-    setCentralWidget( mainWidget );
+    layout_work->setHorizontalSpacing( 10 );
+    layout_work->setVerticalSpacing( 10 );
+    workWidget->setLayout( layout_work );
+    mainWgt = new QTabWidget(this);
+    mainWgt->addTab( workWidget, tr("Work") );
+
+    layout_tune             = new QGridLayout(tuneWidget);
+    force_serialButton      = new QPushButton( "Force" );
+    connect( force_serialButton, SIGNAL( pressed() ), this, SLOT( openForce() ) );
+    rs485_serialButton      = new QPushButton( "RS485" );
+    connect( rs485_serialButton, SIGNAL( pressed() ), this, SLOT( openModbus() ) );
+    stepper_serialButton    = new QPushButton( "Stepper" );
+
+    layout_tune->addWidget( force_ui, 1, 1, 1, 1 );
+    layout_tune->addWidget( rs485_serial, 2, 1, 1, 1 );
+    layout_tune->addWidget( stepper_ui, 1, 2, 1, 1 );
+    tuneWidget->setLayout( layout_tune );
+
+    mainWgt->addTab( tuneWidget, tr("Tune") );
+    setCentralWidget( mainWgt );
     setWindowTitle( "Bench control" );
 }
 

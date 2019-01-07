@@ -10,7 +10,7 @@
 
 #include "port.h"
 #include "forcewindow.h"
-
+#include <steppercontrol.h>
 #include <modbuslistener.h>
 
 class BenchWindow : public QMainWindow
@@ -28,8 +28,9 @@ private:
     ForceWindow         *force_ui;
     ModbusListener      *rs485_serial;
     Port                *stepper_serial;
+    StepperControl      *stepper_ui;
     QString             force_str;
-
+    QTabWidget          *mainWgt;
     QPushButton     *force_serialButton;
     QPushButton     *rs485_serialButton;
     QPushButton     *stepper_serialButton;
@@ -48,8 +49,12 @@ private:
     double              resistance;
     double              frequency;
 
-    QGridLayout         *grid_layout;
+    QGridLayout         *layout_tune;
+    QGridLayout         *layout_work;
     QLineEdit           *forceEdit;
+    QWidget             *tuneWidget;
+    QWidget             *workWidget;
+
 signals:
     void stepForward();
     void stepBackward();

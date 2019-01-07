@@ -172,7 +172,7 @@ void ModbusListener::readReady()
                 voltagePhaseB = entry.toDouble() / 10;
             if ( i == 36)
                 voltagePhaseC = entry.toDouble() / 10;
-            if ( i == 39 )
+            if ( i == 40 )
                 currentPhaseA = entry.toDouble() / 1000;
             if ( i == 43)
                 frequency = entry.toDouble() / 100;

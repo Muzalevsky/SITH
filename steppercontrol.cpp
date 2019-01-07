@@ -2,11 +2,42 @@
 
 #include <cstdlib>
 
-StepperControl::StepperControl()
+StepperControl::StepperControl( QWidget* parent ) : QMainWindow( parent )
 {
+    gridLayout = new QGridLayout();
+    speedEdit       = new QLineEdit();
+    stepNumberEdit  = new QLineEdit();
+    stepSizeEdit    = new QLineEdit();
+    initBtn = new QPushButton("Init", this);
+    sendBtn = new QPushButton("Send", this);
 
+    gridLayout->addWidget(new QLabel(tr("Set speed: ")),1,1,1,1);
+    gridLayout->addWidget(new QLabel(tr("Set step number: ")),2,1,1,1);
+    gridLayout->addWidget(new QLabel(tr("Set step size (mm): ")),3,1,1,1);
+    gridLayout->addWidget(speedEdit,1,2,1,1);
+    gridLayout->addWidget(stepNumberEdit,2,2,1,1);
+    gridLayout->addWidget(stepSizeEdit,3,2,1,1);
+
+    gridLayout->addWidget(initBtn,4,1,1,1);
+    gridLayout->addWidget(sendBtn,4,2,1,1);
+
+//    setButton = new QPushButton( "Set" );
+//    connect( setButton, SIGNAL(pressed() ), this, SLOT( saveSettings() ));
+//    gridLayout->addWidget( setButton, 5,1,1,1);
+
+//    openButton = new QPushButton( "Open" );
+//    connect( openButton, SIGNAL(pressed() ), port, SLOT( openPort() ));
+//    gridLayout->addWidget( openButton, 5,2,1,1);
+
+//    QPushButton *searchButton = new QPushButton( "Search" );
+//    connect( searchButton, SIGNAL(pressed() ), this, SLOT( searchPorts() ));
+//    gridLayout->addWidget( searchButton, 5,3,1,1);
+
+    QWidget* mainWidget = new QWidget;
+    mainWidget->setLayout( gridLayout );
+    setCentralWidget( mainWidget );
+    setWindowTitle( "Stepper settings" );
 }
-
 
 uint8_t StepperControl::xor_sum(uint8_t *data,uint16_t length)
 {

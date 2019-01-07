@@ -1,6 +1,14 @@
 #ifndef STEPPERCONTROL_H
 #define STEPPERCONTROL_H
 
+#include <QMainWindow>
+#include <QGridLayout>
+#include <QComboBox>
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+
+
 #include <cstdint>
 
 enum  CMD_TYPE {
@@ -118,20 +126,24 @@ typedef struct
 }COMMANDS_RETURN_DATA_Type;
 
 
-
-
-
-
-
-
-
-
-class StepperControl
+class StepperControl : public QMainWindow
 {
 public:
-    StepperControl();
+    explicit StepperControl( QWidget* parent );
     uint8_t xor_sum(uint8_t *data,uint16_t length);
     void    sendPassword();
+
+    QPushButton *setButton;
+    QPushButton *openButton;
+
+
+private:
+    QGridLayout     *gridLayout;
+    QLineEdit       *speedEdit;
+    QLineEdit       *stepNumberEdit;
+    QLineEdit       *stepSizeEdit;
+    QPushButton     *initBtn;
+    QPushButton     *sendBtn;
 
 };
 
