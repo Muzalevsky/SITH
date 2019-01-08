@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QObject>
 
 #include <port.h>
 #include <smsd_header.h>
@@ -15,20 +16,44 @@
 
 class StepperControl : public QMainWindow
 {
+    Q_OBJECT
 public:
     explicit StepperControl( Port* ext_port, QWidget* parent );
-    uint8_t xor_sum(uint8_t *data,uint16_t length);
-    void    sendPassword();
-    void    request();
-    void    response();
-    void    powerStep01();
+    uint8_t             xor_sum(uint8_t *data,uint16_t length);
+    void                sendPassword();
+    void                request();
+    void                response();
+    void                moveMotor( uint32_t step_number, bool reverse );
+    void                setZero();
+    void                setMaxSpeed( uint32_t speed_limit );
+    void                getAbsPos();
 
-    QPushButton *setButton;
-    QPushButton *openButton;
+    QByteArray          serialize( LAN_COMMAND_Type *cmd );
+    LAN_COMMAND_Type*   deserialize(const QByteArray& byteArray);
+
+    QPushButton     *setButton;
+    QPushButton     *openButton;
+    uint32_t        step_number;
+
+signals:
+    void writeCmdToPort(QByteArray arr);
+    void updatePos(QString);
+public slots:
+    void saveSettings();
+    void searchPorts();
+    void getResponse( QByteArray );
+    void updateSpeedLimit(QString str) { speed_limit = str.toDouble(); }
+    void updateStepNumber(QString str) { step_number = str.toDouble(); }
+    void stepForward();
+    void stepBackward();
+    void slotInit();
+    void slotSend();
 
 private:
-    QComboBox       *PortNameBox;
+    QTimer              *timer;
 
+    QComboBox       *PortNameBox;
+    uint8_t         default_Ver;
     Port            *port;
     QGridLayout     *gridLayout;
     QLineEdit       *speedEdit;
@@ -37,9 +62,10 @@ private:
     QPushButton     *initBtn;
     QPushButton     *sendBtn;
     SettingsDialog  *m_settingsDialog;
-public slots:
-    void saveSettings();
-    void searchPorts();
+
+    uint32_t speed_limit;
+    uint32_t abs_position;
+
 };
 
 #endif // STEPPERCONTROL_H

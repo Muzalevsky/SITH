@@ -5,7 +5,6 @@ Port::Port(QObject *parent) :
     QObject(parent)
 {
     qDebug() << "new port" << this;
-    force_str = new QString();
 }
 
 Port::~Port()
@@ -15,8 +14,9 @@ Port::~Port()
 
 void Port::process_Port()
 {
-    connect(&thisPort,SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(handleError(QSerialPort::SerialPortError)));
+    connect(&thisPort, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(handleError(QSerialPort::SerialPortError)));
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
+    connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
 
 void Port::setPortSettings(QString name, int baudrate,int DataBits,
@@ -43,8 +43,6 @@ void Port::openPort()
             if ( thisPort.isOpen() ) {
                 error_((SettingsPort.name + " >> Открыт!\r").toLocal8Bit());
             }
-            qDebug() << "open port";
-
         } else {
             thisPort.close();
             error_(thisPort.errorString().toLocal8Bit());
@@ -82,6 +80,11 @@ void Port::ReadInPort()
 {
     QByteArray data;
     data.append(thisPort.readAll());
+    outPortByteArray(data);
     outPort(data);
 }
 
+void Port::errorHandler( QString err )
+{
+    qDebug() << err.toLocal8Bit();
+}

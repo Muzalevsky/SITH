@@ -22,11 +22,11 @@ public:
 
     QSerialPort thisPort;
     Settings SettingsPort;
-    QString *force_str;
 signals:
     void finished_Port();
     void error_(QString err);
     void outPort(QString data);
+    void outPortByteArray(QByteArray data);
 
 public slots:
     void closePort();
@@ -39,7 +39,7 @@ public slots:
 
 private slots:
     void handleError(QSerialPort::SerialPortError error);
-
+    void errorHandler(QString);
 public:
 
 };

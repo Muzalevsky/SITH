@@ -29,15 +29,14 @@ private:
     ModbusListener      *rs485_serial;
     Port                *stepper_serial;
     StepperControl      *stepper_ui;
-    QString             force_str;
     QTabWidget          *mainWgt;
 
-    QLineEdit       *voltageA_edit;
-    QLineEdit       *voltageB_edit;
-    QLineEdit       *voltageC_edit;
-    QLineEdit       *frequency_edit;
-    QLineEdit       *currentA_edit;
-    QLineEdit       *resistance_edit;
+    QLineEdit           *voltageA_edit;
+    QLineEdit           *voltageB_edit;
+    QLineEdit           *voltageC_edit;
+    QLineEdit           *frequency_edit;
+    QLineEdit           *currentA_edit;
+    QLineEdit           *resistance_edit;
 
     double              voltagePhaseA;
     double              voltagePhaseB;
@@ -49,6 +48,8 @@ private:
     QGridLayout         *layout_tune;
     QGridLayout         *layout_work;
     QLineEdit           *forceEdit;
+    QLineEdit           *stepperPosEdit;
+
     QWidget             *tuneWidget;
     QWidget             *workWidget;
 
@@ -59,12 +60,9 @@ signals:
     void updateElectricalValues();
 
 public slots:
-    void setForceValue( QString );
-    void sendStepForward();
-    void sendStepBackward();
-    void getVoltage();
-    void errorHandler( QString );
-    void updateForceEdit();
+    void updateElectricParameters();
+    void updateForceEdit( QString str );
+    void updatePosEdit( QString str );
 
 };
 

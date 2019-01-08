@@ -32,6 +32,10 @@ ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( paren
     mainWidget->setLayout( gridLayout );
     setCentralWidget( mainWidget );
     setWindowTitle( "Port settings" );
+
+    connect(port, SIGNAL(outPort(QString)), this, SLOT(setForceValue(QString)));
+
+
 }
 
 void ForceWindow::searchPorts()
@@ -55,4 +59,21 @@ void ForceWindow::saveSettings()
                            m_settingsDialog->settings().flow );
 
     qDebug() << "New force port settings saved.";
+}
+
+void ForceWindow::setForceValue( QString str )
+{
+    QString end_str = ")";
+    QString start_str = "=";
+
+    if ( str == start_str ) {
+        force_str.clear();
+    }
+
+    if ( str == end_str ) {
+        force_str.append( str );
+        emit updateForce( force_str );
+    } else if ( str != end_str && str != start_str ) {
+        force_str.append( str );
+    }
 }
