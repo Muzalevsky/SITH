@@ -3,6 +3,10 @@
 
 #include <cstdint>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum  CMD_TYPE {
     CODE_CMD_REQUEST = 0x00,
     CODE_CMD_RESPONSE = 0x01,
@@ -81,42 +85,6 @@ enum CMD_PowerSTEP {
     CMD_PowerSTEP01_GET_STACK = 0x38
 } ;
 
-typedef struct
-{
-    uint8_t XOR_SUM;
-    uint8_t Ver;
-    uint8_t CMD_TYPE;
-    uint8_t CMD_IDENTIFICATION;
-    uint16_t LENGTH_DATA;
-    uint8_t *DATA;
-} LAN_COMMAND_Type;
-
-typedef struct
-{
-    uint32_t RESERVE;
-    uint32_t ACTION;
-    uint32_t COMMAND;
-    uint32_t DATA;
-} SMSD_CMD_Type;
-
-typedef struct {
-    uint16_t HiZ;
-    uint16_t BUSY;
-    uint16_t SW_F;
-    uint16_t SW_EVN;
-    uint16_t DIR;
-    uint16_t MOT_STATUS;
-    uint16_t CMD_ERROR;
-    uint16_t RESERVE;
-} powerSTEP_STATUS_TypeDef;
-
-typedef struct
-{
-    powerSTEP_STATUS_TypeDef STATUS_POWERSTEP01;
-    uint8_t ERROR_OR_COMMAND;
-    uint32_t RETURN_DATA;
-} COMMANDS_RETURN_DATA_Type;
-
 enum ErrorList
 {
     OK,
@@ -144,5 +112,69 @@ enum ErrorList
     STATUS_RELE_SET,
     STATUS_RELE_CLR
 } ;
+
+typedef struct
+{
+    uint32_t RESERVE    :3;
+    uint32_t ACTION     :1;
+    uint32_t COMMAND    :6;
+    uint32_t DATA       :22;
+} SMSD_CMD_Type;
+
+typedef struct {
+    uint16_t HiZ        :1;
+    uint16_t BUSY       :1;
+    uint16_t SW_F       :1;
+    uint16_t SW_EVN     :1;
+    uint16_t DIR        :1;
+    uint16_t MOT_STATUS :2;
+    uint16_t CMD_ERROR  :1;
+    uint16_t RESERVE    :8;
+} powerSTEP_STATUS_TypeDef;
+
+typedef struct
+{
+    powerSTEP_STATUS_TypeDef STATUS_POWERSTEP01;
+    uint8_t ERROR_OR_COMMAND;
+    uint32_t RETURN_DATA;
+} COMMANDS_RETURN_DATA_Type;
+
+typedef struct
+{
+    uint8_t XOR_SUM;
+    uint8_t Ver;
+    uint8_t CMD_TYPE;
+    uint8_t CMD_IDENTIFICATION;
+    uint16_t LENGTH_DATA;
+    uint8_t DATA_ARR[8];
+} request_message_t;
+
+typedef struct
+{
+    uint8_t XOR_SUM;
+    uint8_t Ver;
+    uint8_t CMD_TYPE;
+    uint8_t CMD_IDENTIFICATION;
+    uint16_t LENGTH_DATA;
+//    SMSD_CMD_Type DATA;
+    union {
+        uint8_t DATA_ARR[8];
+        SMSD_CMD_Type DATA;
+    };
+} out_message_t;
+
+typedef struct
+{
+    uint8_t XOR_SUM;
+    uint8_t Ver;
+    uint8_t CMD_TYPE;
+    uint8_t CMD_IDENTIFICATION;
+    uint16_t LENGTH_DATA;
+    COMMANDS_RETURN_DATA_Type DATA;
+} in_message_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // SMSD_HEADER_H

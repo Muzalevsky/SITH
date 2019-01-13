@@ -8,6 +8,8 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QObject>
+#include <QDataStream>
+
 
 #include <port.h>
 #include <smsd_header.h>
@@ -24,12 +26,16 @@ public:
     void                request();
     void                response();
     void                moveMotor( uint32_t step_number, bool reverse );
+    void                moveMotor1( uint32_t step_number, bool reverse );
+
     void                setZero();
     void                setMaxSpeed( uint32_t speed_limit );
     void                getAbsPos();
 
-    QByteArray          serialize( LAN_COMMAND_Type *cmd );
-    LAN_COMMAND_Type*   deserialize(const QByteArray& byteArray);
+    QByteArray          serialize( out_message_t &cmd );
+    QByteArray          serialize( request_message_t &cmd );
+
+    in_message_t        deserialize(const QByteArray& byteArray);
 
     QPushButton     *setButton;
     QPushButton     *openButton;
@@ -51,7 +57,7 @@ public slots:
 
 private:
     QTimer              *timer;
-
+    uint8_t         passwd_length;
     QComboBox       *PortNameBox;
     uint8_t         default_Ver;
     Port            *port;
@@ -65,6 +71,7 @@ private:
 
     uint32_t speed_limit;
     uint32_t abs_position;
+    int      passwd[8];
 
 };
 
