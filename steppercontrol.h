@@ -9,7 +9,7 @@
 #include <QLineEdit>
 #include <QObject>
 #include <QDataStream>
-
+#include <QMutex>
 
 #include <port.h>
 #include <smsd_header.h>
@@ -23,27 +23,24 @@ public:
     explicit StepperControl( Port* ext_port, QWidget* parent );
     uint8_t             xor_sum(uint8_t *data,uint16_t length);
     void                sendPassword();
-    void                request();
-    void                response();
-    void                moveMotor( uint32_t step_number, bool reverse );
-    void                moveMotor1( uint32_t step_number, bool reverse );
-
-    void                setZero();
-    void                setMaxSpeed( uint32_t speed_limit );
-    void                getAbsPos();
 
     QByteArray          serialize( out_message_t &cmd );
     QByteArray          serialize( request_message_t &cmd );
 
     in_message_t        deserialize(const QByteArray& byteArray);
+    void                sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data );
 
     QPushButton     *setButton;
     QPushButton     *openButton;
+    QPushButton     *closeButton;
     uint32_t        step_number;
 
 signals:
     void writeCmdToPort(QByteArray arr);
     void updatePos(QString);
+    void hasAnswer();
+    void addCmdToQueue( QByteArray arr );
+
 public slots:
     void saveSettings();
     void searchPorts();
@@ -54,9 +51,14 @@ public slots:
     void stepBackward();
     void slotInit();
     void slotSend();
+    void slotGetPos();
+    void slotSetSpeed();
+    void processVector();
 
 private:
     QTimer              *timer;
+    QVector <QByteArray>    command_buf;
+    QMutex          *mutex;
     uint8_t         passwd_length;
     QComboBox       *PortNameBox;
     uint8_t         default_Ver;
@@ -67,11 +69,18 @@ private:
     QLineEdit       *stepSizeEdit;
     QPushButton     *initBtn;
     QPushButton     *sendBtn;
+    QPushButton     *getPosBtn;
+    QPushButton     *setSpdBtn;
+
     SettingsDialog  *m_settingsDialog;
 
     uint32_t speed_limit;
     uint32_t abs_position;
     int      passwd[8];
+
+    bool        receiveFlag;
+    bool        sendFlag;
+
 
 };
 

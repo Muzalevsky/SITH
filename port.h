@@ -27,6 +27,7 @@ signals:
     void error_(QString err);
     void outPort(QString data);
     void outPortByteArray(QByteArray data);
+    void hasAnswer();
 
 public slots:
     void closePort();

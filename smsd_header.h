@@ -156,11 +156,7 @@ typedef struct
     uint8_t CMD_TYPE;
     uint8_t CMD_IDENTIFICATION;
     uint16_t LENGTH_DATA;
-//    SMSD_CMD_Type DATA;
-    union {
-        uint8_t DATA_ARR[8];
-        SMSD_CMD_Type DATA;
-    };
+    SMSD_CMD_Type DATA;
 } out_message_t;
 
 typedef struct
