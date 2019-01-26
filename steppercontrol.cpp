@@ -5,8 +5,11 @@
 #include <QDebug>
 #include <QTimer>
 
+//step_number(66) = 0,4 לל םא רעמךו
+//step_number(82) = 0,5 לל םא רעמךו
+
 StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
-    step_number(66),
+    step_number(82),
     default_Ver(0x02),
     speed_limit(1000),
     abs_position(0),

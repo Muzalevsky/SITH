@@ -28,6 +28,10 @@ ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( paren
     connect( searchButton, &QPushButton::clicked, this, &ForceWindow::searchPorts );
     gridLayout->addWidget( searchButton, 4,3,1,1);
 
+    QPushButton *closeButton = new QPushButton( "Close" );
+    connect( closeButton, &QPushButton::clicked, port, &Port::closePort );
+    gridLayout->addWidget( closeButton, 4,4,1,1);
+
     QWidget* mainWidget = new QWidget;
     mainWidget->setLayout( gridLayout );
     setCentralWidget( mainWidget );
