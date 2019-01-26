@@ -8,6 +8,10 @@
 #include <QPushButton>
 #include <QTimer>
 
+#include <QTime>
+#include <QDate>
+#include <QFile>
+
 #include "port.h"
 #include "forcewindow.h"
 #include "steppercontrol.h"
@@ -23,6 +27,7 @@ public:
 private:
     QTimer              *timer;
     void initializeWindow();
+    void startAuto();
 
     Port                *force_serial;
     ForceWindow         *force_ui;
@@ -49,10 +54,12 @@ private:
     QGridLayout         *layout_work;
     QLineEdit           *forceEdit;
     QLineEdit           *stepperPosEdit;
+    QLineEdit           *pointsNumberEdit;
 
     QWidget             *tuneWidget;
     QWidget             *workWidget;
-
+    QFile               *file;
+    int                 position_counter;
 signals:
     void stepForward();
     void stepBackward();
@@ -63,6 +70,7 @@ public slots:
     void updateElectricParameters();
     void updateForceEdit( QString str );
     void updatePosEdit( QString str );
+    void printString();
 
 };
 

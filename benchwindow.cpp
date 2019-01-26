@@ -3,6 +3,7 @@
 #include <QThread>
 #include <QLabel>
 
+
 BenchWindow::BenchWindow(QWidget *parent) : QMainWindow( parent )
 {
     initializeWindow();
@@ -10,6 +11,11 @@ BenchWindow::BenchWindow(QWidget *parent) : QMainWindow( parent )
     timer = new QTimer();
 //    timer->setInterval(500);
 //    connect( timer, &QTimer::timeout, this, &BenchWindow::updateForceEdit );
+
+    QString filename = "SolenoidTest.txt";
+    file = new QFile(filename);
+    file->open(QIODevice::ReadWrite);
+    position_counter = 0;
 
     //Default
     force_serial->setPortSettings( QString( "//./COM5" ), 9600, 8, 0, 0, 0 );
@@ -68,6 +74,7 @@ void BenchWindow::initializeWindow()
     frequency_edit  = new QLineEdit();
     currentA_edit   = new QLineEdit();
     resistance_edit = new QLineEdit();
+    pointsNumberEdit = new QLineEdit();
 
     forceEdit->setReadOnly( true );
     stepperPosEdit->setReadOnly( true );
@@ -82,6 +89,9 @@ void BenchWindow::initializeWindow()
     connect( stepForward, SIGNAL( pressed() ), stepper_ui, SLOT( stepForward() )  );
     QPushButton *stepBackward = new QPushButton( "Step -" );
     connect( stepBackward, SIGNAL( pressed() ), stepper_ui, SLOT( stepBackward() )  );
+
+    QPushButton *autoStartBtn = new QPushButton( "Start" );
+    connect( autoStartBtn, SIGNAL( pressed() ), this, SLOT( printString() )  );
 
     layout_work->addWidget( new QLabel( tr("Force") ), 1, 2, 1, 1 );
     layout_work->addWidget( forceEdit, 1, 3, 1, 1 );
@@ -99,6 +109,9 @@ void BenchWindow::initializeWindow()
     layout_work->addWidget( stepBackward, 6, 3, 1, 1 );
     layout_work->addWidget( new QLabel( tr("Abs position: ") ), 6, 4, 1, 1 );
     layout_work->addWidget( stepperPosEdit, 6, 5, 1, 1 );
+    layout_work->addWidget( new QLabel( tr("Number of points: ") ), 7, 1, 1, 1 );
+    layout_work->addWidget( pointsNumberEdit, 7, 2, 1, 1 );
+    layout_work->addWidget( autoStartBtn, 7, 3, 1, 1 );
 
     layout_work->setHorizontalSpacing( 10 );
     layout_work->setVerticalSpacing( 10 );
@@ -144,3 +157,27 @@ void BenchWindow::updateElectricParameters()
 
 }
 
+void BenchWindow::startAuto()
+{
+//    timer->setInterval(2000);
+    connect( timer, &QTimer::timeout, this, &BenchWindow::printString );
+
+    for ( int i = 0; i < (pointsNumberEdit->text().toInt()); i++ )
+    {
+        stepper_ui->stepForward();
+        position_counter++;
+        timer->start(2000);
+    }
+}
+
+void BenchWindow::printString()
+{
+    QString str;
+    QDate date;
+    QTime time;
+
+    QTextStream stream(file);
+    stream << date.currentDate().toString() << time.currentTime().toString() << forceEdit->text() << position_counter << "\n";
+
+//    qDebug() << date.currentDate().toString() << time.currentTime().toString();
+}
