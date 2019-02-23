@@ -16,20 +16,15 @@ class ForceWindow : public QMainWindow
 public:
     explicit ForceWindow( Port* port, QWidget* parent );
     QString         force_str;
-
-private:
-    Port            *port;
-    QGridLayout     *gridLayout;
-    QComboBox       *PortNameBox;
     SettingsDialog  *m_settingsDialog;
+    Port            *port;
+    QString         port_name;
+private:
 
 public slots:
     void saveSettings();
-    void searchPorts();
-    void setForceValue( QString str );
 
 signals:
-    void updateForce(QString);
 };
 
 #endif // FORCEWINDOW_H

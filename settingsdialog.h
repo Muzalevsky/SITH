@@ -82,8 +82,9 @@ public:
 
     Settings settings() const;
 
-private:
     Settings m_settings;
+    QString port_name;
+private:
     Ui::SettingsDialog *ui;
 };
 

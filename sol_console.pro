@@ -1,5 +1,8 @@
 QT +=  core gui serialport serialbus
 
+#QT +=  core gui
+
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 
@@ -12,22 +15,23 @@ TARGET = sol_console
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    benchwindow.cpp \
     port.cpp \
     forcewindow.cpp \
     steppercontrol.cpp \
     modbuslistener.cpp \
-    settingsdialog.cpp
+    settingsdialog.cpp \
+    mainwindow.cpp
 HEADERS += \
-    benchwindow.h \
     port.h \
     forcewindow.h \
     steppercontrol.h \
     modbuslistener.h \
     settingsdialog.h \
-    smsd_header.h
+    smsd_header.h \
+    mainwindow.h
 #INSTALLS += target
 
 FORMS += \
     settingsdialog.ui \
-    modbuslistener.ui
+    modbuslistener.ui \
+    mainwindow.ui

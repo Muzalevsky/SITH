@@ -4,7 +4,7 @@
 Port::Port(QObject *parent) :
     QObject(parent)
 {
-    qDebug() << "new port" << this;
+    qDebug() << "New serial port" << this;
 }
 
 Port::~Port()

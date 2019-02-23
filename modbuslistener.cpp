@@ -15,19 +15,19 @@ enum ModbusConnection {
 
 ModbusListener::ModbusListener(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::ModbusListener)
+//    , ui(new Ui::ModbusListener)
     , lastRequest(nullptr)
     , modbusDevice(nullptr)
 {
 
     timer = new QTimer();
-    timer->setInterval(1000);
+    timer->setInterval(500);
     connect( timer, &QTimer::timeout, this, &ModbusListener::on_readButton_clicked );
 
-    ui->setupUi(this);
+//    ui->setupUi(this);
     m_settingsDialog = new SettingsDialog(this);
     initActions();
-    ui->connectType->setCurrentIndex(0);
+//    ui->connectType->setCurrentIndex(0);
     on_connectType_currentIndexChanged(0);
 
     strList = new QStringList();
@@ -39,27 +39,25 @@ ModbusListener::~ModbusListener()
     if (modbusDevice)
         modbusDevice->disconnectDevice();
     delete modbusDevice;
-    delete ui;
+//    delete ui;
 }
 
 void ModbusListener::initActions()
 {
-    ui->actionConnect->setEnabled(true);
-    ui->actionDisconnect->setEnabled(false);
-    ui->actionExit->setEnabled(true);
-    ui->actionOptions->setEnabled(true);
+//    ui->actionConnect->setEnabled(true);
+//    ui->actionDisconnect->setEnabled(false);
+//    ui->actionExit->setEnabled(true);
+//    ui->actionOptions->setEnabled(true);
 
-    connect(ui->actionConnect, &QAction::triggered,
-            this, &ModbusListener::on_connectButton_clicked);
-    connect(ui->actionDisconnect, &QAction::triggered,
-            this, &ModbusListener::on_connectButton_clicked);
+//    connect(ui->actionConnect, &QAction::triggered,
+//            this, &ModbusListener::on_connectButton_clicked);
+//    connect(ui->actionDisconnect, &QAction::triggered,
+//            this, &ModbusListener::on_connectButton_clicked);
 
-    connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
-    connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
-
-
-    connect(ui->readButton, &QPushButton::clicked, this, ModbusListener::on_readButton_clicked);
-    connect(ui->optionsButton, &QPushButton::clicked, m_settingsDialog, &QDialog::show);
+//    connect(ui->actionExit, &QAction::triggered, this, &QMainWindow::close);
+//    connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &QDialog::show);
+//    connect(ui->readButton, &QPushButton::clicked, this, &ModbusListener::on_readButton_clicked);
+//    connect(ui->optionsButton, &QPushButton::clicked, m_settingsDialog, &QDialog::show);
 }
 
 void ModbusListener::on_connectType_currentIndexChanged(int index)
@@ -74,12 +72,11 @@ void ModbusListener::on_connectType_currentIndexChanged(int index)
     modbusDevice = new QModbusRtuSerialMaster(this);
 
     connect(modbusDevice, &QModbusClient::errorOccurred, [this](QModbusDevice::Error) {
-        statusBar()->showMessage(modbusDevice->errorString(), 5000);
-    });
+        statusBar()->showMessage(modbusDevice->errorString(), 5000); } );
 
     if (!modbusDevice)
     {
-        ui->connectButton->setDisabled(true);
+//        ui->connectButton->setDisabled(true);
         statusBar()->showMessage(tr("Could not create Modbus master."), 5000);
     } else {
         connect(modbusDevice, &QModbusClient::stateChanged,
@@ -96,7 +93,10 @@ void ModbusListener::on_connectButton_clicked()
     if (modbusDevice->state() != QModbusDevice::ConnectedState)
     {
         modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
-            ui->portEdit->text());
+            portName );
+        portName = ui->portEdit->text();
+
+
         modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,
             m_settingsDialog->settings().parity);
         modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
@@ -112,22 +112,27 @@ void ModbusListener::on_connectButton_clicked()
         {
             statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
         } else {
-            ui->actionConnect->setEnabled(false);
-            ui->actionDisconnect->setEnabled(true);
+//            emit isConnected(true);
+//            ui->actionConnect->setEnabled(false);
+//            ui->actionDisconnect->setEnabled(true);
             timer->start();
         }
     } else {
         modbusDevice->disconnectDevice();
-        ui->actionConnect->setEnabled(true);
-        ui->actionDisconnect->setEnabled(false);
+//        emit isConnected(false);
+
+//        ui->actionConnect->setEnabled(true);
+//        ui->actionDisconnect->setEnabled(false);
     }
 }
 
 void ModbusListener::onStateChanged(int state)
 {
     bool connected = (state != QModbusDevice::UnconnectedState);
-    ui->actionConnect->setEnabled(!connected);
-    ui->actionDisconnect->setEnabled(connected);
+//    ui->actionConnect->setEnabled(!connected);
+//    ui->actionDisconnect->setEnabled(connected);
+
+    emit isConnected(connected);
 
     if (state == QModbusDevice::UnconnectedState)
         ui->connectButton->setText(tr("Connect"));
@@ -167,18 +172,18 @@ void ModbusListener::readReady()
             const QString entry = tr("%1").arg(QString::number(unit.value(i), 10 ));
             ui->readValue->addItem(entry);
             strList->append( entry );
-            if ( i == 34)
+            if ( i == 34 )
                 voltagePhaseA = entry.toDouble() / 10;
             if ( i == 35)
                 voltagePhaseB = entry.toDouble() / 10;
             if ( i == 36)
                 voltagePhaseC = entry.toDouble() / 10;
             if ( i == 40 )
-                currentPhaseA = entry.toDouble() / 1000;
-            if ( i == 43)
+                currentPhaseA = entry.toDouble() * 8 / 1000;
+            if ( i == 43 )
                 frequency = entry.toDouble() / 100;
 
-
+//            qDebug() << entry;
 
         }
         emit getReply();

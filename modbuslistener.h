@@ -30,9 +30,15 @@ public:
     double voltagePhaseC;
 
     double currentPhaseA;
+    double currentPhaseB;
+    double currentPhaseC;
 
     double frequency;
 
+
+    SettingsDialog *m_settingsDialog;
+    QString portName;
+    QModbusClient *modbusDevice;
 
 private:
     QTimer              *timer;
@@ -40,18 +46,17 @@ private:
     void initActions();
     Ui::ModbusListener *ui;
     QModbusReply *lastRequest;
-    QModbusClient *modbusDevice;
-    SettingsDialog *m_settingsDialog;
+public slots:
+    void on_connectButton_clicked();
 
 private slots:
-    void on_connectButton_clicked();
     void onStateChanged(int state);
     void on_readButton_clicked();
     void readReady();
     void on_connectType_currentIndexChanged(int);
-
 signals:
     void getReply();
+    void isConnected(bool);
 };
 
 #endif // MODBUSLISTENER_H

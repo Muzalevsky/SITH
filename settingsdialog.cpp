@@ -74,7 +74,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
         m_settings.responseTime = ui->timeoutSpinner->value();
         m_settings.numberOfRetries = ui->retriesSpinner->value();
         m_settings.flow = ui->FlowCombo->currentIndex();
-
         hide();
     });
 }

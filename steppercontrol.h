@@ -34,6 +34,8 @@ public:
     QPushButton     *openButton;
     QPushButton     *closeButton;
     uint32_t        step_number;
+    SettingsDialog  *m_settingsDialog;
+    Port            *port;
 
 signals:
     void writeCmdToPort(QByteArray arr);
@@ -62,7 +64,6 @@ private:
     uint8_t         passwd_length;
     QComboBox       *PortNameBox;
     uint8_t         default_Ver;
-    Port            *port;
     QGridLayout     *gridLayout;
     QLineEdit       *speedEdit;
     QLineEdit       *stepNumberEdit;
@@ -72,7 +73,6 @@ private:
     QPushButton     *getPosBtn;
     QPushButton     *setSpdBtn;
 
-    SettingsDialog  *m_settingsDialog;
 
     uint32_t speed_limit;
     uint32_t abs_position;
