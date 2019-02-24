@@ -18,7 +18,7 @@ public:
     QString         force_str;
     SettingsDialog  *m_settingsDialog;
     Port            *port;
-    QString         port_name;
+    QString         portName;
 private:
 
 public slots:

@@ -28,6 +28,7 @@ signals:
     void outPort(QString data);
     void outPortByteArray(QByteArray data);
     void hasAnswer();
+    void isConnected(bool);
 
 public slots:
     void closePort();
@@ -36,6 +37,7 @@ public slots:
     void process_Port();
     void WriteToPort(QByteArray data);
     void ReadInPort();
+    void connect_clicked();
 
 
 private slots:

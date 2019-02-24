@@ -8,7 +8,11 @@
 //step_number(66) = 0,4 לל םא רעמךו
 //step_number(82) = 0,5 לל םא רעמךו
 
+// Tuning constant depends on mechanic
+//int step_per_mm = 164;
+
 StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
+    step_per_mm(164),
     step_number(82),
     default_Ver(0x02),
     speed_limit(1000),
@@ -17,85 +21,19 @@ StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow(
 {
     port = ext_port;
     passwd_length = 8;
-    gridLayout      = new QGridLayout();
-    speedEdit       = new QLineEdit();
-    stepNumberEdit  = new QLineEdit();
-    stepSizeEdit    = new QLineEdit();
-    PortNameBox = new QComboBox();
     m_settingsDialog = new SettingsDialog(this);
-
     receiveFlag = false;
     sendFlag = false;
-
     mutex = new QMutex();
-//    timer = new QTimer();
-//    timer->setInterval( 300 );
-//    connect( timer, &QTimer::timeout, this, &StepperControl::processVector );
-
-    initBtn = new QPushButton("Init", this);
-    sendBtn = new QPushButton("Passwd", this);
-    getPosBtn = new QPushButton("getPos", this);
-    setSpdBtn = new QPushButton("setSpd", this);
-    connect( initBtn, &QPushButton::clicked, this, &StepperControl::slotInit );
-    connect( sendBtn, &QPushButton::clicked, this, &StepperControl::slotSend );
-    connect( getPosBtn, &QPushButton::clicked, this, &StepperControl::slotGetPos );
-    connect( setSpdBtn, &QPushButton::clicked, this, &StepperControl::slotSetSpeed );
-
-    gridLayout->addWidget(new QLabel(tr("Stepper Port: ")),1,1,1,1);
-    gridLayout->addWidget(PortNameBox,1,2,1,1);
-    gridLayout->addWidget(new QLabel(tr("Set speed: ")),2,1,1,1);
-    gridLayout->addWidget(new QLabel(tr("Set step number: ")),3,1,1,1);
-    gridLayout->addWidget(new QLabel(tr("Set step size (mm): ")),4,1,1,1);
-    gridLayout->addWidget(speedEdit,2,2,1,1);
-    gridLayout->addWidget(stepNumberEdit,3,2,1,1);
-    gridLayout->addWidget(stepSizeEdit,4,2,1,1);
-    gridLayout->addWidget(initBtn,5,1,1,1);
-    gridLayout->addWidget(sendBtn,5,2,1,1);
-    gridLayout->addWidget(getPosBtn,5,3,1,1);
-    gridLayout->addWidget(setSpdBtn,5,4,1,1);
-
-    QPushButton *optionsButton = new QPushButton( "Options" );
-    connect( optionsButton, &QPushButton::clicked, m_settingsDialog, &QDialog::show);
-    gridLayout->addWidget( optionsButton, 6,1,1,1);
-
-    setButton = new QPushButton( "Set" );
-    connect( setButton, &QPushButton::clicked, this, &StepperControl::saveSettings );
-    gridLayout->addWidget( setButton, 7,1,1,1);
-    openButton = new QPushButton( "Open" );
-    connect( openButton, &QPushButton::clicked, port, &Port::openPort );
-    gridLayout->addWidget( openButton, 7,2,1,1);
-    closeButton = new QPushButton( "Close" );
-    connect( closeButton, &QPushButton::clicked, port, &Port::closePort );
-    gridLayout->addWidget( closeButton, 7,3,1,1);
-    QPushButton *searchButton = new QPushButton( "Search" );
-    connect( searchButton, &QPushButton::clicked, this, &StepperControl::searchPorts );
-    gridLayout->addWidget( searchButton, 7,4,1,1);
-
-    QWidget* mainWidget = new QWidget;
-    mainWidget->setLayout( gridLayout );
-    setCentralWidget( mainWidget );
-    setWindowTitle( "Stepper settings" );
 
     connect(port, SIGNAL(outPortByteArray(QByteArray)), this, SLOT(getResponse(QByteArray)));
     connect(this, &StepperControl::writeCmdToPort, port, &Port::WriteToPort);
-    connect(speedEdit, SIGNAL( textChanged(QString) ), this, SLOT( updateSpeedLimit(QString)));
-    connect(stepNumberEdit, SIGNAL( textChanged(QString) ), this, SLOT( updateStepNumber(QString)));
     connect(this, &StepperControl::hasAnswer, this, &StepperControl::processVector );
-}
-
-void StepperControl::searchPorts()
-{
-    PortNameBox->clear();
-    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
-    {
-        PortNameBox->addItem(info.portName());
-    }
-    qDebug() << "Stepper port search.";
 }
 
 void StepperControl::saveSettings()
 {
-    port->setPortSettings( PortNameBox->currentText(),
+    port->setPortSettings( portName,
                            m_settingsDialog->settings().baud,
                            m_settingsDialog->settings().dataBits,
                            m_settingsDialog->settings().parity,
@@ -196,15 +134,10 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
     QByteArray arr = serialize( cmd );
 
     emit addCmdToQueue( arr );
-
-
     emit writeCmdToPort( arr );
     qDebug() << "sendCommandPowerStep" << arr;
 
 }
-
-
-
 
 QByteArray StepperControl::serialize( out_message_t &cmd )
 {
@@ -322,16 +255,12 @@ in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 void StepperControl::stepForward()
 {
     qDebug() << "step+";
-//    moveMotor( step_number, false );
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_F, step_number );
-
 }
 
 void StepperControl::stepBackward()
 {
     qDebug() << "step-";
-//    moveMotor( step_number, true );
-
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_R, step_number );
 }
 
@@ -369,4 +298,9 @@ void StepperControl::processVector()
 //    mutex->unlock();
 //    emit writeCmdToPort( arr );
 //    qDebug() << "sendCommandPowerStep" << arr;
+}
+
+void StepperControl::updateStepNumber( double step_mm )
+{
+    step_number = static_cast <uint32_t>( step_mm * step_per_mm );
 }

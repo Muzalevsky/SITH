@@ -12,7 +12,7 @@ class QModbusClient;
 class QModbusReply;
 
 namespace Ui {
-class ModbusListener;
+//class ModbusListener;
 class SettingsDialog;
 }
 
@@ -37,17 +37,18 @@ public:
 
 
     SettingsDialog *m_settingsDialog;
-    QString portName;
     QModbusClient *modbusDevice;
 
+    QString     portName;
 private:
-    QTimer              *timer;
-
+    QTimer      *timer;
+    int         slaveNumber;
     void initActions();
-    Ui::ModbusListener *ui;
+//    Ui::ModbusListener *ui;
     QModbusReply *lastRequest;
 public slots:
     void on_connectButton_clicked();
+    void updateSlaveNumber( int number );
 
 private slots:
     void onStateChanged(int state);

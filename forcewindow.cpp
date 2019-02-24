@@ -12,7 +12,7 @@ ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( paren
 
 void ForceWindow::saveSettings()
 {
-    port->setPortSettings( port_name,
+    port->setPortSettings( portName,
                            m_settingsDialog->settings().baud,
                            m_settingsDialog->settings().dataBits,
                            m_settingsDialog->settings().parity,
