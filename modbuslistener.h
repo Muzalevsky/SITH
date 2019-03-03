@@ -35,6 +35,7 @@ public:
 
     double frequency;
 
+    float temperature;
 
     SettingsDialog *m_settingsDialog;
     QModbusClient *modbusDevice;
@@ -57,6 +58,7 @@ private slots:
     void on_connectType_currentIndexChanged(int);
 signals:
     void getReply();
+    void getTemperature();
     void isConnected(bool);
 };
 

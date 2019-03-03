@@ -20,7 +20,8 @@ SOURCES += main.cpp \
     steppercontrol.cpp \
     modbuslistener.cpp \
     settingsdialog.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    encodercontrol.cpp
 HEADERS += \
     port.h \
     forcewindow.h \
@@ -28,7 +29,8 @@ HEADERS += \
     modbuslistener.h \
     settingsdialog.h \
     smsd_header.h \
-    mainwindow.h
+    mainwindow.h \
+    encodercontrol.h
 #INSTALLS += target
 
 FORMS += \

@@ -86,6 +86,7 @@ void Port::ReadInPort()
     outPortByteArray(data);
     outPort(data);
     emit hasAnswer();
+
 }
 
 void Port::errorHandler( QString err )

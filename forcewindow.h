@@ -19,12 +19,16 @@ public:
     SettingsDialog  *m_settingsDialog;
     Port            *port;
     QString         portName;
+    void            updateForce( QString);
+
 private:
 
 public slots:
     void saveSettings();
 
 signals:
+    void setForceValue( QString );
+
 };
 
 #endif // FORCEWINDOW_H
