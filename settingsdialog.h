@@ -84,8 +84,12 @@ public:
 
     Settings m_settings;
     QString port_name;
-private:
     Ui::SettingsDialog *ui;
+
+private:
+
+public slots:
+    void setBaud( int baud );
 };
 
 #endif // SETTINGSDIALOG_H

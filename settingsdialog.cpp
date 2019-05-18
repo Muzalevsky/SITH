@@ -51,6 +51,8 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
+#include <QDebug>
+
 SettingsDialog::SettingsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SettingsDialog)
@@ -86,4 +88,12 @@ SettingsDialog::~SettingsDialog()
 SettingsDialog::Settings SettingsDialog::settings() const
 {
     return m_settings;
+}
+
+void SettingsDialog::setBaud( qint32 baud )
+{
+    int index = ui->baudCombo->findText( QString::number(baud) );
+    qDebug() << "index of current baud" << index << "baud:" << baud;
+    ui->baudCombo->setCurrentIndex( index );
+    m_settings.baud = baud;
 }

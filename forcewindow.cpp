@@ -12,8 +12,11 @@ ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( paren
     port = ext_port;
     m_settingsDialog = new SettingsDialog(this);
 
-    connect( port, &Port::outPort, this, &ForceWindow::updateForce );
+//    m_settingsDialog->m_settings.baud = port->SettingsPort.baudRate;
+//    m_settingsDialog->port_name = portName;
+//    m_settingsDialog->setBaud( port->SettingsPort.baudRate );
 
+    connect( port, &Port::outPort, this, &ForceWindow::updateForce );
 }
 
 void ForceWindow::saveSettings()
