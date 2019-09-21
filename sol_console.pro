@@ -37,3 +37,6 @@ FORMS += \
     settingsdialog.ui \
     modbuslistener.ui \
     mainwindow.ui
+
+RESOURCES += \
+    icons.qrc

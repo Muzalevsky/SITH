@@ -17,18 +17,19 @@ StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow(
     default_Ver(0x02),
     speed_limit(1000),
     abs_position(0),
-    passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } )
+    passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } ),
+    isRelayOn(false)
 {
     port = ext_port;
     passwd_length = 8;
     m_settingsDialog = new SettingsDialog(this);
     receiveFlag = false;
     sendFlag = false;
-    mutex = new QMutex();
+//    mutex = new QMutex();
 
     connect(port, SIGNAL(outPortByteArray(QByteArray)), this, SLOT(getResponse(QByteArray)));
     connect(this, &StepperControl::writeCmdToPort, port, &Port::WriteToPort);
-    connect(this, &StepperControl::hasAnswer, this, &StepperControl::processVector );
+//    connect(this, &StepperControl::hasAnswer, this, &StepperControl::processVector );
 }
 
 void StepperControl::saveSettings()
@@ -88,6 +89,10 @@ void StepperControl::getResponse( QByteArray arr )
             qDebug() << "Успешная авторизация (USB)";
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR ) {
             qDebug() << "Ошибка контрольной суммы" << cmd.DATA.ERROR_OR_COMMAND;
+        } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET ) {
+            qDebug() << "Реле ВКЛ" << cmd.DATA.ERROR_OR_COMMAND;
+        } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_CLR ) {
+            qDebug() << "Реле ВЫКЛ" << cmd.DATA.ERROR_OR_COMMAND;
         } else {
             qDebug() << "Response error: " << cmd.DATA.ERROR_OR_COMMAND;
         }
@@ -135,7 +140,7 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
 
     emit addCmdToQueue( arr );
     emit writeCmdToPort( arr );
-    qDebug() << "sendCommandPowerStep" << arr;
+    qDebug() << "sendCommandPowerStep" << arr.toHex();
 
 }
 
@@ -205,7 +210,7 @@ QByteArray StepperControl::serialize( request_message_t &cmd )
 in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 {
     in_message_t cmd;
-    qDebug() << "In <<<" << "arr" << byteArray.toHex();
+    qDebug() << "Stepper IN <<<" << byteArray.toHex();
 
     QByteArray localArray = byteArray;
     if( localArray.size() < 13 )
@@ -291,16 +296,52 @@ void StepperControl::slotSetSpeed()
 
 }
 
-void StepperControl::processVector()
-{
+//void StepperControl::slotSetRele()
+//{
+//    sendCommandPowerStep( CMD_PowerSTEP01_SET_RELE, 0 );
+////    sendCommandPowerStep( CMD_PowerSTEP01_FUCK_SET_RELAY, 0 );
+//}
+
+//void StepperControl::slotClearRele()
+//{
+//    sendCommandPowerStep( CMD_PowerSTEP01_CLR_RELE, 0 );
+//}
+
+//void StepperControl::processVector()
+//{
 //    mutex->lock();
 //    QByteArray arr = command_buf.takeFirst();
 //    mutex->unlock();
 //    emit writeCmdToPort( arr );
 //    qDebug() << "sendCommandPowerStep" << arr;
-}
+//}
 
 void StepperControl::updateStepNumber( double step_mm )
 {
     step_number = static_cast <uint32_t>( step_mm * step_per_mm );
+}
+
+void StepperControl::relayOn()
+{
+    sendCommandPowerStep( CMD_PowerSTEP01_SET_RELE, 0 );
+    isRelayOn = true;
+    emit isLineSwitchOn( isRelayOn );
+}
+
+void StepperControl::relayOff()
+{
+    sendCommandPowerStep( CMD_PowerSTEP01_CLR_RELE, 0 );
+    isRelayOn = false;
+    emit isLineSwitchOn( isRelayOn );
+}
+
+void StepperControl::lineSwitchClicked(bool isPressed)
+{
+    if ( isRelayOn ) {
+        qDebug() << "relay OFF";
+        relayOff();
+    } else {
+        qDebug() << "relay ON";
+        relayOn();
+    }
 }

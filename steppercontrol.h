@@ -9,7 +9,7 @@
 //#include <QLineEdit>
 #include <QObject>
 #include <QDataStream>
-#include <QMutex>
+//#include <QMutex>
 
 #include <port.h>
 #include <smsd_header.h>
@@ -21,16 +21,13 @@ class StepperControl : public QMainWindow
     Q_OBJECT
 public:
     explicit StepperControl( Port* ext_port, QWidget* parent );
-    uint8_t             xor_sum(uint8_t *data,uint16_t length);
-    void                sendPassword();
-    int                 step_per_mm;
-
-    QByteArray          serialize( out_message_t &cmd );
-    QByteArray          serialize( request_message_t &cmd );
-
-    in_message_t        deserialize(const QByteArray& byteArray);
-    void                sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data );
-
+    uint8_t         xor_sum(uint8_t *data,uint16_t length);
+    void            sendPassword();
+    int             step_per_mm;
+    QByteArray      serialize( out_message_t &cmd );
+    QByteArray      serialize( request_message_t &cmd );
+    in_message_t    deserialize(const QByteArray& byteArray);
+    void            sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data );
     uint32_t        step_number;
     SettingsDialog  *m_settingsDialog;
     Port            *port;
@@ -40,6 +37,7 @@ signals:
     void updatePos(QString);
     void hasAnswer();
     void addCmdToQueue( QByteArray arr );
+    void isLineSwitchOn(bool);
 
 public slots:
     void saveSettings();
@@ -52,19 +50,27 @@ public slots:
     void slotSend();
     void slotGetPos();
     void slotSetSpeed();
-    void processVector();
+//    void slotSetRele();
+//    void slotClearRele();
+//    void processVector();
+    void lineSwitchClicked(bool isPressed);
+
+    void relayOn();
+    void relayOff();
 
 private:
-    QTimer              *timer;
+    QTimer      *timer;
     QVector <QByteArray>    command_buf;
-    QMutex          *mutex;
-    uint8_t         passwd_length;
-    uint8_t         default_Ver;
-    uint32_t speed_limit;
-    uint32_t abs_position;
-    int      passwd[8];
+//    QMutex          *mutex;
+    uint8_t     passwd_length;
+    uint8_t     default_Ver;
+    uint32_t    speed_limit;
+    uint32_t    abs_position;
+    int         passwd[8];
     bool        receiveFlag;
     bool        sendFlag;
+
+    bool        isRelayOn;
 
 
 };
