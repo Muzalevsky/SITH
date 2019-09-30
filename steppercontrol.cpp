@@ -32,6 +32,21 @@ StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow(
 //    connect(this, &StepperControl::hasAnswer, this, &StepperControl::processVector );
 }
 
+StepperControl::~StepperControl()
+{
+    resetMotorSupply();
+
+    //Here we stop talking with stepper driver
+    port->closePort();
+}
+
+void StepperControl::resetMotorSupply()
+{
+    qDebug() << "Sending soft stop";
+    sendCommandPowerStep(CMD_PowerSTEP01_SOFT_HI_Z, 0);
+}
+
+
 void StepperControl::saveSettings()
 {
     port->setPortSettings( portName,

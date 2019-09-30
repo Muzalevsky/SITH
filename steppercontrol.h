@@ -21,6 +21,8 @@ class StepperControl : public QMainWindow
     Q_OBJECT
 public:
     explicit StepperControl( Port* ext_port, QWidget* parent );
+    ~StepperControl();
+
     uint8_t         xor_sum(uint8_t *data,uint16_t length);
     void            sendPassword();
     int             step_per_mm;
@@ -50,6 +52,7 @@ public slots:
     void slotSend();
     void slotGetPos();
     void slotSetSpeed();
+    void resetMotorSupply();
 //    void slotSetRele();
 //    void slotClearRele();
 //    void processVector();

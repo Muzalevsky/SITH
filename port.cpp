@@ -102,3 +102,8 @@ void Port::connect_clicked()
         openPort();
     }
 }
+
+bool Port::isOpened()
+{
+    return thisPort.isOpen();
+}

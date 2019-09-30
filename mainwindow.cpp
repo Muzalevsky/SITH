@@ -8,6 +8,7 @@
 
 #include <QInputDialog>
 #include <QDir>
+#include <QMessageBox>
 
 /***********************************************/
 MainWindow::MainWindow(QWidget *parent) :
@@ -50,7 +51,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->modeComboBox->setCurrentIndex( 2 );
 
     connect( ui->autoStopButton, &QPushButton::clicked, this, &MainWindow::updateStopFlag );
-    ui->autoStopButton->setChecked(false);
+//    ui->autoStopButton->setToolTip(tr("Остановка привода <Пробел>"));
+//    ui->autoStopButton->setWhatsThis("Остановка привода <Пробел>");
+
 
     connect( ui->setZeroPositionButton, &QPushButton::clicked, encoder_ui, &EncoderControl::setZeroPosition );
     connect( ui->setZeroForceButton, &QPushButton::clicked, this, &MainWindow::setZeroForce );
@@ -108,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->stepBackwardButton, SIGNAL( pressed() ), stepper_ui, SLOT( stepBackward() ) );
     connect( this, SIGNAL( doStepForward() ), stepper_ui, SLOT( stepForward() ) );
     connect( this, SIGNAL( doStepBackward() ), stepper_ui, SLOT( stepBackward() ) );
+    connect( this, SIGNAL( resetStepperSupply() ), stepper_ui, SLOT( resetMotorSupply() ) );
+
     connect( ui->autoStartButton, SIGNAL( pressed() ), this, SLOT( startAuto() ) );
 //    connect(ui->stepperspeedEdit, SIGNAL( textChanged(QString) ), this, SLOT( updateSpeedLimit(QString)));
     connect( ui->stepSizeBox, SIGNAL( valueChanged(double) ),
@@ -169,7 +174,7 @@ MainWindow::MainWindow(QWidget *parent) :
      * Authorization
      */
     bool ok;
-    QString userName = QInputDialog::getText(this, tr("Авторизация"),
+    QString userName = QInputDialog::getText(this, tr("Вход"),
                                          tr("Имя:"), QLineEdit::Normal,
                                          nullptr, &ok);
     if (ok && !userName.isEmpty()){
@@ -179,7 +184,6 @@ MainWindow::MainWindow(QWidget *parent) :
         qDebug() << "Failed to login";
         exit(EXIT_FAILURE);
     }
-
 }
 
 /***********************************************/
@@ -208,7 +212,6 @@ void MainWindow::updatePosition()
     currentPosition = encoder_ui->final_position_mm;
 
     if ( ui->currentPositionEdit->text().toFloat() != currentPosition ) {
-        ui->positionEdit->setText( QString::number(currentPosition, 'f') );
         ui->currentPositionEdit->setText( QString::number(currentPosition, 'f') );
     }
 }
@@ -323,6 +326,9 @@ void MainWindow::updateStopFlag( bool checked )
 {
     stop_flag = checked;
     qDebug() << "STOP state: " << stop_flag;
+    if (stop_flag) {
+        emit resetStepperSupply();
+    }
 }
 
 /***********************************************/
@@ -332,32 +338,47 @@ void MainWindow::setOperatorName(QString name)
 }
 
 /***********************************************/
-
-
-
-
 void MainWindow::modeChanged( int mode )
 {
     // 0 manual, 1 semiautomated, 2 automatic
     switch ( mode ) {
-        case 0:
+        case WorkingModes::MANUAL_MODE:
         ui->autoStartButton->setEnabled( false );
         ui->reverseCheckBox->setEnabled( false );
         ui->stepSizeBox->setEnabled( false );
         ui->workingStrokeBox->setEnabled( false );
-        ui->manualGroupBox->setEnabled( true );
+
+
+        ui->manualStepBox->setEnabled(true);
+        ui->stepForwardButton->setEnabled(true);
+        ui->stepBackwardButton->setEnabled(true);
+
+        ui->manualStepBox->setVisible(true);
+        ui->manualModeLabel->setVisible(true);
+        ui->stepSizeLabel->setVisible(true);
+        ui->stepForwardButton->setVisible(true);
+        ui->stepBackwardButton->setVisible(true);
+
         break;
-    case 1:
+    case WorkingModes::SEMIAUTO_MODE :
         break;
-    case 2:
+    case WorkingModes::FULLAUTO_MODE :
     default:
         ui->autoStartButton->setEnabled( true );
         ui->reverseCheckBox->setEnabled( true );
         ui->stepSizeBox->setEnabled( true );
         ui->workingStrokeBox->setEnabled( true );
-        ui->manualGroupBox->setEnabled( false );
 
 
+        ui->manualStepBox->setEnabled(false);
+        ui->stepForwardButton->setEnabled(false);
+        ui->stepBackwardButton->setEnabled(false);
+
+        ui->manualStepBox->setVisible(false);
+        ui->manualModeLabel->setVisible(false);
+        ui->stepSizeLabel->setVisible(false);
+        ui->stepForwardButton->setVisible(false);
+        ui->stepBackwardButton->setVisible(false);
         break;
     }
 }
@@ -395,17 +416,33 @@ void MainWindow::setSerialSettings()
 */
 void MainWindow::startAuto()
 {
+    if ( checkProtocolHeader() != 0 ) {
+        return;
+    }
+
+    if ( checkConnectionStates() != 0 ) {
+        return;
+    }
+
     int i = 0;
+
     ui->pointsLeftEdit->setText( QString::number( stepNumber - i ) );
     stepper_ui->step_number = auto_step_number;
 
-    file = new QFile(ui->protocolEdit->text() + ".txt" );
-    file->open(QIODevice::ReadWrite | QIODevice::Text);
+    protocolCsvFile = new QFile(ui->protocolNameEdit->text() + ".csv" );
+    protocolCsvFile->open(QIODevice::ReadWrite | QIODevice::Text);
+
+    protocolFile = new QFile(ui->protocolNameEdit->text() + ".txt" );
+    protocolFile->open(QIODevice::ReadWrite | QIODevice::Text);
     bool dir_flag = ui->reverseCheckBox->isChecked();
 
     qDebug() << "Number of points: " << stepNumber;
     printProtocolHeader();
+    printCsvHeader();
+
     printString();
+    printCsvString();
+
     // Zero position
     for ( i = 0; i <= stepNumber; i++ )
     {
@@ -417,21 +454,103 @@ void MainWindow::startAuto()
                 emit doStepBackward(); // вниз
             }
             printString();
+            printCsvString();
+
             ui->pointsLeftEdit->setText( QString::number( stepNumber - i ) );
             spec_delay();
         }
     }
-    file->close();
+
+    protocolFile->close();
+    protocolCsvFile->close();
+    delete protocolFile;
+    delete protocolCsvFile;
+}
+
+/***********************************************/
+int MainWindow::checkProtocolHeader()
+{
+    if ( ui->protocolNameEdit->text().isEmpty() ) {
+        QMessageBox msgBox;
+        msgBox.setText("Введите название протокола");
+        msgBox.exec();
+        return -1;
+    }
+
+
+    if ( ui->operatorNameEdit->text().isEmpty() ) {
+        QMessageBox msgBox;
+        msgBox.setText("Введите имя оператора");
+        msgBox.exec();
+        return -2;
+    }
+
+    if ( ui->solenoidTypeEdit->text().isEmpty() ) {
+        QMessageBox msgBox;
+        msgBox.setText("Введите тип соленоида");
+        msgBox.exec();
+        return -3;
+    }
+
+    if ( ui->stepSizeBox->value() == 0 ) {
+       QMessageBox msgBox;
+       msgBox.setText("Введите шаг испытаний");
+       msgBox.exec();
+       return -4;
+    }
+
+    if ( ui->workingStrokeBox->value() == 0 ) {
+       QMessageBox msgBox;
+       msgBox.setText("Введите величину рабочего хода");
+       msgBox.exec();
+       return -5;
+    }
+
+    return 0;
+}
+
+/***********************************************/
+
+int MainWindow::checkConnectionStates()
+{
+    if ( !force_serial->isOpened() ) {
+       QMessageBox msgBox;
+       msgBox.setText("Отсутствует связь с весовым терминалом");
+       msgBox.exec();
+       return -1;
+    }
+
+    if ( !stepper_serial->isOpened() ) {
+       QMessageBox msgBox;
+       msgBox.setText("Отсутствует связь с драйвером двигателя");
+       msgBox.exec();
+       return -2;
+    }
+
+    if ( !rs485_serial->isModbusConnected() ) {
+       QMessageBox msgBox;
+       msgBox.setText("Отсутствует интерфейс RS485");
+       msgBox.exec();
+       return -3;
+    }
+
+    if ( !encoder_port->isOpened() ) {
+       QMessageBox msgBox;
+       msgBox.setText("Отсутствует связь с экнодером");
+       msgBox.exec();
+       return -3;
+    }
+
+    return 0;
 }
 
 /***********************************************/
 void MainWindow::printProtocolHeader()
 {
-    QString str;
     QDate date;
     QTime time;
 
-    QTextStream stream(file);
+    QTextStream stream(protocolFile);
     stream << date.currentDate().toString()
            << " " << time.currentTime().toString()
            << "  \n"
@@ -449,12 +568,54 @@ void MainWindow::printProtocolHeader()
 void MainWindow::printString()
 {
     QTime time;
-    QTextStream stream(file);
+    QTextStream stream(protocolFile);
 
     stream << " " << time.currentTime().toString()
            << " \t" << ui->forceEdit->text()
            << " \t" << ui->currentPositionEdit->text()
            << " \t" << currentPhaseA
+           << "  \n";
+}
+
+void MainWindow::printCsvHeader()
+{
+    QDate date;
+    QTime time;
+
+    QTextStream stream(protocolCsvFile);
+    stream << date.currentDate().toString()
+           << " " << time.currentTime().toString()
+           << "  \n"
+           << " " << "Operator name;" << ui->operatorNameEdit->text()
+           << "  \n"
+           << " " << "Solenoid type;" << ui->solenoidTypeEdit->text()
+           << "  \n"
+           << " " << "Step size;" << QString::number( ui->stepSizeBox->value() )
+           << "  \n"
+           << " " << "Working stroke;" << QString::number( ui->workingStrokeBox->value() )
+           << "  \n";
+
+    //Table headers
+    stream << " " << "Time"
+           << ";" << "Position, mm"
+           << ";" << "Force, kg"
+           << ";" << "Current phase A, A"
+           << ";" << "Temperature, Celcius"
+           << "  \n";
+
+
+}
+
+void MainWindow::printCsvString()
+{
+    QTime time;
+    QTextStream stream(protocolCsvFile);
+
+    stream << " " << time.currentTime().toString()
+           << ";" << ui->currentPositionEdit->text()
+           << ";" << ui->forceEdit->text()
+           << ";" << currentPhaseA
+           << ";" << ui->temperatureEdit->text()
            << "  \n";
 }
 

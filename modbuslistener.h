@@ -12,7 +12,6 @@ class QModbusClient;
 class QModbusReply;
 
 namespace Ui {
-//class ModbusListener;
 class SettingsDialog;
 }
 
@@ -23,6 +22,9 @@ public:
     explicit ModbusListener(QWidget *parent = nullptr);
     ~ModbusListener();
     QModbusDataUnit readRequest() const;
+
+    bool isModbusConnected();
+
     const QModbusDataUnit *unit;
     QStringList *strList;
     double voltagePhaseA;
@@ -42,10 +44,10 @@ public:
 
     QString     portName;
 private:
+    bool        m_connected;
     QTimer      *timer;
     int         slaveNumber;
     void initActions();
-//    Ui::ModbusListener *ui;
     QModbusReply *lastRequest;
 public slots:
     void on_connectButton_clicked();

@@ -22,6 +22,8 @@ public:
 
     QSerialPort thisPort;
     Settings SettingsPort;
+
+    bool isOpened();
 signals:
     void finished_Port();
     void error_(QString err);

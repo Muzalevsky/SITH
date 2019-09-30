@@ -99,8 +99,8 @@ void ModbusListener::on_connectButton_clicked()
 
 void ModbusListener::onStateChanged(int state)
 {
-    bool connected = (state != QModbusDevice::UnconnectedState);
-    emit isConnected(connected);
+    m_connected = (state != QModbusDevice::UnconnectedState);
+    emit isConnected(m_connected);
 }
 
 void ModbusListener::on_readButton_clicked()
@@ -203,4 +203,9 @@ void ModbusListener::readReady()
 void ModbusListener::updateSlaveNumber( int number )
 {
     slaveNumber = number;
+}
+
+bool ModbusListener::isModbusConnected()
+{
+    return (m_connected != QModbusDevice::UnconnectedState);
 }

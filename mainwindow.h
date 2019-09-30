@@ -20,6 +20,14 @@
 #define ORGANIZATION_DOMAIN "www.etu.ru"
 #define APPLICATION_NAME "SITH Control program"
 
+
+enum WorkingModes
+{
+    MANUAL_MODE = 0,
+    SEMIAUTO_MODE,
+    FULLAUTO_MODE
+};
+
 namespace Ui {
 class MainWindow;
 }
@@ -35,13 +43,19 @@ private:
     Ui::MainWindow *ui;
     void initializeWindow();
     void spec_delay();
+
     void writeSettings();
     void loadSettings();
     void readSettings();
-    void printProtocolHeader();
+
+    int checkProtocolHeader();
+    int checkConnectionStates();
 
     QWidget             *mainwidget;
     QSettings           *settings;
+
+    QFile               *protocolFile;
+    QFile               *protocolCsvFile;
 
     Port                *force_serial;
     ModbusListener      *rs485_serial;
@@ -67,7 +81,7 @@ private:
     double              resistance;
     double              frequency;
     float               temperature;
-    QFile               *file;
+
     QString             position_raw;
     float               force_kg;
     int                 stepNumber;
@@ -75,9 +89,7 @@ private:
 signals:
     void doStepForward();
     void doStepBackward();
-    void updateElectricalValues();
-    void positionChanged(QString);
-
+    void resetStepperSupply();
 public slots:
     void updateElectricParameters();
     void updateForceValue( QString str );
@@ -88,15 +100,19 @@ public slots:
     void updateTime();
 
     void calculateStepNumber(double val);
-    void changeButtonText(bool);
     void connect_clicked();
+    void changeButtonText(bool);
     void modeChanged(int);
+
+    void printProtocolHeader();
+    void printCsvHeader();
+    void printCsvString();
     void printString();
+
     void searchSerialPorts();
     void setSerialSettings();
     void setZeroForce();
     void startAuto();
-//    void changeLineSwitch();
     void setOperatorName(QString);
 };
 
