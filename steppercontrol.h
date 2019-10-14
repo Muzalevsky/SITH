@@ -37,26 +37,25 @@ public:
 signals:
     void writeCmdToPort(QByteArray arr);
     void updatePos(QString);
-    void hasAnswer();
     void addCmdToQueue( QByteArray arr );
     void isLineSwitchOn(bool);
 
 public slots:
     void saveSettings();
     void getResponse( QByteArray );
+    void initialize();
+
+    void disableElectricity();
+
 //    void updateSpeedLimit(QString str);
     void updateStepNumber(double );
     void stepForward();
     void stepBackward();
-    void slotInit();
-    void slotSend();
+//    void slotSend();
     void slotGetPos();
     void slotSetSpeed();
     void resetMotorSupply();
-//    void slotSetRele();
-//    void slotClearRele();
-//    void processVector();
-    void lineSwitchClicked(bool isPressed);
+    void lineSwitchClicked();
 
     void relayOn();
     void relayOff();
@@ -64,18 +63,15 @@ public slots:
 private:
     QTimer      *timer;
     QVector <QByteArray>    command_buf;
-//    QMutex          *mutex;
     uint8_t     passwd_length;
     uint8_t     default_Ver;
     uint32_t    speed_limit;
     uint32_t    abs_position;
     int         passwd[8];
+
     bool        receiveFlag;
     bool        sendFlag;
-
     bool        isRelayOn;
-
-
 };
 
 #endif // STEPPERCONTROL_H

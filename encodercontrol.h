@@ -28,14 +28,21 @@ public:
     float           zero_position_offset;
     int             overfloat_position;
 
+    bool isAlive();
+
 private:
+    bool hasConnection;
 
 public slots:
     void saveSettings();
     void updatePosition(QString);
     void analyzePosition(QString);
     void setZeroPosition();
+private slots:
+    void gotTimeout();
 signals:
+    void resetWatchDog();
+    void lostConnection();
     void updateUpperLevelPosition();
     void positionChanged(QString);
 

@@ -10,38 +10,53 @@
 #include <QDir>
 #include <QMessageBox>
 
+#define MSEC_BETWEEN_STEPS 2000
+#define STATEOBSERVER_INTERVAL_MSEC 500
+
 /***********************************************/
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow( parent ),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    voltagePhaseA(0),
+    voltagePhaseB(0),
+    voltagePhaseC(0),
+    currentPhaseA(0),
+    currentPhaseB(0),
+    currentPhaseC(0),
+    frequency(0),
+    resistance(0),
+    manual_step_number(0),
+    auto_step_number(0),
+    stepNumber(0),
+    stepDoneNumber(0),
+    force_kg(0),
+    isBusy(false)
 {
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
 
-    setWindowTitle( tr("Программа испытаний соленоида") );
-    setWindowIcon( QIcon(":/images/pipes.png") );
-    force_serial    = new Port();
-    force_ui        = new ForceWindow( force_serial, this );
-    rs485_serial    = new ModbusListener();
-    stepper_serial  = new Port();
-    stepper_ui      = new StepperControl( stepper_serial, this);
-    encoder_port    = new Port();
-    encoder_ui      = new EncoderControl( encoder_port, this );
-
     // Initialization
-    stop_flag           = false;
-    voltagePhaseA       = 0;
-    voltagePhaseB       = 0;
-    voltagePhaseC       = 0;
-    currentPhaseA       = 0;
-    currentPhaseB       = 0;
-    currentPhaseC       = 0;
-    frequency           = 0;
-    resistance          = 0;
-    manual_step_number  = 0;
-    auto_step_number    = 0;
-    stepNumber          = 0;
-    force_kg            = 0;
+    // TODO Think about the next problem: when starts button is checked, but manual updateStopFlag()is useless
+    stop_flag           = true;
+//    ui->autoStopButton->setChecked(true);
+//    updateStopFlag(true);
+
+
+    connect( ui->testButton, &QPushButton::clicked, this, &MainWindow::testSlot );
+
+
+    force_serial        = new Port();
+    force_serial->setPortOpenMode(QIODevice::ReadOnly);
+    force_ui            = new ForceWindow( force_serial, this );
+    rs485_serial        = new ModbusListener();
+    stepper_serial      = new Port();
+    stepper_serial->setPortOpenMode(QIODevice::ReadWrite);
+
+    stepper_ui          = new StepperControl( stepper_serial, this);
+    encoder_serial      = new Port();
+    encoder_serial->setPortOpenMode(QIODevice::ReadOnly);
+
+    encoder_ui          = new EncoderControl( encoder_serial, this );
 
     // Mode choosing
     ui->modeComboBox->addItem( "Ручной" );
@@ -50,48 +65,67 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->modeComboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( modeChanged(int) ) );
     ui->modeComboBox->setCurrentIndex( 2 );
 
-    connect( ui->autoStopButton, &QPushButton::clicked, this, &MainWindow::updateStopFlag );
-//    ui->autoStopButton->setToolTip(tr("Остановка привода <Пробел>"));
-//    ui->autoStopButton->setWhatsThis("Остановка привода <Пробел>");
-
-
-    connect( ui->setZeroPositionButton, &QPushButton::clicked, encoder_ui, &EncoderControl::setZeroPosition );
-    connect( ui->setZeroForceButton, &QPushButton::clicked, this, &MainWindow::setZeroForce );
-
-//    connect( ui->lineSwitchButton, &QPushButton::clicked, this, &MainWindow::changeLineSwitch );
     // Settings saving
     connect( ui->saveSettingsButton, &QPushButton::clicked, this, &MainWindow::writeSettings );
     connect( ui->loadSettingsButton, &QPushButton::clicked, this, &MainWindow::loadSettings );
+    //    settings = new QSettings(  ORGANIZATION_NAME, APPLICATION_NAME );
+        settings = new QSettings( "settings.ini", QSettings::IniFormat );
 
-
+    // Working cycle callbacks
+    connect( ui->autoStopButton, &QPushButton::clicked, this, &MainWindow::updateStopFlag );
+    connect( ui->setZeroPositionButton, &QPushButton::clicked, encoder_ui, &EncoderControl::setZeroPosition );
     // Auto mode calculation
     connect( ui->workingStrokeBox, SIGNAL( valueChanged(double) ), this,
              SLOT( calculateStepNumber(double) ) );
     connect( ui->stepSizeBox, SIGNAL( valueChanged(double) ), this,
              SLOT( calculateStepNumber(double) ) );
-
     // Manual mode calculation
     connect( ui->manualStepBox, SIGNAL( valueChanged(double) ), this,
              SLOT( updateManualStep(double) ) );
 
+    // Work block
+    connect( ui->stepForwardButton, SIGNAL( pressed() ), this, SLOT( gotStepForward() ) );
+    connect( ui->stepBackwardButton, SIGNAL( pressed() ), this, SLOT( gotStepBackward() ) );
+    connect( this, SIGNAL( doStepForward() ), stepper_ui, SLOT( stepForward() ) );
+    connect( this, SIGNAL( doStepBackward() ), stepper_ui, SLOT( stepBackward() ) );
+    connect( this, SIGNAL( resetStepperSupply() ), stepper_ui, SLOT( resetMotorSupply() ) );
+
+    connect( this, SIGNAL( goingToClose() ), stepper_ui, SLOT( disableElectricity() ) );
+
+    connect( ui->autoStartButton, SIGNAL( pressed() ), this, SLOT( startAuto() ) );
+    connect( ui->stepSizeBox, SIGNAL( valueChanged(double) ), stepper_ui, SLOT( updateStepNumber(double) ) );
+    connect( ui->manualStepBox, SIGNAL( valueChanged(double) ), stepper_ui, SLOT( updateStepNumber(double) ) );
+    connect( encoder_ui, &EncoderControl::updateUpperLevelPosition, this, &MainWindow::updatePosition );
+    connect( force_ui, &ForceWindow::setForceValue, this, &MainWindow::updateForceValue );
+
+    connect( ui->lineSwitchButton, &QPushButton::clicked, this, &MainWindow::lineSwitchClicked );
+    connect( stepper_ui, &StepperControl::isLineSwitchOn, this, &MainWindow::changeButtonText );
+
     // Current time and date ticker
-    update_timer = new QTimer();
-    update_timer->setInterval( 500 );
+    measuringTimeoutTimer = new QTimer(this);
+    measuringTimeoutTimer->setInterval(MSEC_BETWEEN_STEPS);
+    connect( measuringTimeoutTimer, SIGNAL( timeout() ), this, SLOT( measureNextPoint() ) );
+
+    update_timer = new QTimer(this);
+    update_timer->setInterval(STATEOBSERVER_INTERVAL_MSEC);
     connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateTime() ) );
-    update_timer->start();
+    connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateState() ) );
 
-//    settings = new QSettings(  ORGANIZATION_NAME, APPLICATION_NAME );
-    settings = new QSettings( "settings.ini", QSettings::IniFormat );
+    motorSupplyOffTimer = new QTimer(this);
+//    connect( overForceTimer, SIGNAL( timeout() ), stepper_ui, SLOT( resetMotorSupply()) );
+    motorSupplyOffTimer->singleShot(1000, stepper_ui, SLOT( resetMotorSupply()));
 
+
+    // Serials buttons
     connect( ui->searchSerialButton, &QPushButton::clicked, this, &MainWindow::searchSerialPorts );
     connect( ui->forceConnectButton, &QPushButton::clicked, this, &MainWindow::connect_clicked );
     connect( ui->stepperConnectButton, &QPushButton::clicked, this, &MainWindow::connect_clicked );
     connect( ui->modbusConnectButton, &QPushButton::clicked, this, &MainWindow::connect_clicked );
     connect( ui->encoderConnectButton, &QPushButton::clicked, this, &MainWindow::connect_clicked );
 
-    connect( encoder_port, &Port::isConnected, this, &MainWindow::changeButtonText );
-    connect( force_serial, &Port::isConnected, this, &MainWindow::changeButtonText );
-    connect( stepper_serial, &Port::isConnected, this, &MainWindow::changeButtonText );
+    connect( encoder_serial, &Port::connectionStateChanged, this, &MainWindow::changeButtonText );
+    connect( force_serial, &Port::connectionStateChanged, this, &MainWindow::changeButtonText );
+    connect( stepper_serial, &Port::connectionStateChanged, this, &MainWindow::changeButtonText );
     connect( rs485_serial, &ModbusListener::isConnected, this, &MainWindow::changeButtonText );
 
     connect( ui->modbusSlaveBox, SIGNAL( valueChanged(int) ), rs485_serial, SLOT( updateSlaveNumber(int) ) );
@@ -100,34 +134,23 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( ui->forceOptionsButton, &QPushButton::clicked,
               force_ui->m_settingsDialog, &QDialog::show);
     connect( ui->stepperOptionsButton, &QPushButton::clicked,
-           stepper_ui->m_settingsDialog, &QDialog::show);    
+           stepper_ui->m_settingsDialog, &QDialog::show);
     connect( ui->modbusSettingsButton, &QPushButton::clicked,
             rs485_serial->m_settingsDialog, &QDialog::show);
     connect( ui->encoderSettingsButton, &QPushButton::clicked,
             encoder_ui->m_settingsDialog, &QDialog::show);
 
-    // Work block
-    connect( ui->stepForwardButton, SIGNAL( pressed() ), stepper_ui, SLOT( stepForward() ) );
-    connect( ui->stepBackwardButton, SIGNAL( pressed() ), stepper_ui, SLOT( stepBackward() ) );
-    connect( this, SIGNAL( doStepForward() ), stepper_ui, SLOT( stepForward() ) );
-    connect( this, SIGNAL( doStepBackward() ), stepper_ui, SLOT( stepBackward() ) );
-    connect( this, SIGNAL( resetStepperSupply() ), stepper_ui, SLOT( resetMotorSupply() ) );
-
-    connect( ui->autoStartButton, SIGNAL( pressed() ), this, SLOT( startAuto() ) );
-//    connect(ui->stepperspeedEdit, SIGNAL( textChanged(QString) ), this, SLOT( updateSpeedLimit(QString)));
-    connect( ui->stepSizeBox, SIGNAL( valueChanged(double) ),
-             stepper_ui, SLOT( updateStepNumber(double) ) );
-    connect( ui->manualStepBox, SIGNAL( valueChanged(double) ),
-             stepper_ui, SLOT( updateStepNumber(double) ) );
-    connect( encoder_ui, &EncoderControl::updateUpperLevelPosition, this, &MainWindow::updatePosition );
-    connect( force_ui, &ForceWindow::setForceValue, this, &MainWindow::updateForceValue );
-
-    connect( ui->lineSwitchButton, SIGNAL( clicked(bool)), stepper_ui, SLOT( lineSwitchClicked(bool) ) );
-    connect( stepper_ui, &StepperControl::isLineSwitchOn, this, &MainWindow::changeButtonText );
-
+    /*
+     * The main idea is to process ports in different threads
+     */
     //Force value thread
     QThread *thread_Force = new QThread;
     force_serial->moveToThread(thread_Force);
+
+    connect( this, &MainWindow::reconnectForceWindow, force_serial, &Port::reconnectPort );
+    connect( this, &MainWindow::reconnectEncoder, encoder_serial, &Port::reconnectPort );
+
+
     connect(force_serial, SIGNAL(finished_Port()), thread_Force, SLOT(deleteLater()));
     connect(force_serial, SIGNAL(finished_Port()), thread_Force, SLOT(quit()));
     connect(thread_Force, SIGNAL(started()), force_serial, SLOT(process_Port()));//Переназначения метода run
@@ -136,16 +159,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Encoder value thread
     QThread *thread_Encoder = new QThread;
-    encoder_port->moveToThread(thread_Encoder);
-    connect(encoder_port, SIGNAL(finished_Port()), thread_Encoder, SLOT(deleteLater()));
-    connect(encoder_port, SIGNAL(finished_Port()), thread_Encoder, SLOT(quit()));
-    connect(thread_Encoder, SIGNAL(started()), encoder_port, SLOT(process_Port()));//Переназначения метода run
-    connect(thread_Encoder, SIGNAL(finished()), encoder_port, SLOT(deleteLater()));//Удалить к чертям поток
+    encoder_serial->moveToThread(thread_Encoder);
+    connect(encoder_serial, SIGNAL(finished_Port()), thread_Encoder, SLOT(deleteLater()));
+    connect(encoder_serial, SIGNAL(finished_Port()), thread_Encoder, SLOT(quit()));
+    connect(thread_Encoder, SIGNAL(started()), encoder_serial, SLOT(process_Port()));//Переназначения метода run
+    connect(thread_Encoder, SIGNAL(finished()), encoder_serial, SLOT(deleteLater()));//Удалить к чертям поток
     thread_Encoder->start();
 
     //Modbus thread
     QThread *thread_Modbus = new QThread;
-    rs485_serial->moveToThread(thread_Modbus);
+//    rs485_serial->moveToThread(thread_Modbus);
     connect( rs485_serial, &ModbusListener::getReply, this, &MainWindow::updateElectricParameters);
     connect( rs485_serial, &ModbusListener::getTemperature, this, &MainWindow::updateTemperature);
 
@@ -163,16 +186,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     /*
-     *
-     *
      * DEBUG
      */
     connect( ui->relayOnButton, &QPushButton::clicked, stepper_ui, &StepperControl::relayOn );
     connect( ui->relayOffButton, &QPushButton::clicked, stepper_ui, &StepperControl::relayOff );
 
-    /*
-     * Authorization
-     */
+    // Authorization
     bool ok;
     QString userName = QInputDialog::getText(this, tr("Вход"),
                                          tr("Имя:"), QLineEdit::Normal,
@@ -184,26 +203,42 @@ MainWindow::MainWindow(QWidget *parent) :
         qDebug() << "Failed to login";
         exit(EXIT_FAILURE);
     }
+
+    update_timer->start();
 }
 
 /***********************************************/
 MainWindow::~MainWindow()
 {
+//    if (stepper_ui)
+//        stepper_ui->relayOff();
+
     delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    writeSettings();
+    emit goingToClose();
+
+    event->accept();
 }
 
 /****************************/
 /*     Updates block        */
 /****************************/
-
-void MainWindow::setZeroForce()
-{
-    force_kg = 0;
-}
-
 void MainWindow::updateForceValue( QString str )
 {
+    if ( str.contains("=") ) {
+        str.remove("=");
+    }
+
+    if ( str.contains("(kg)") ) {
+        str.remove("(kg)");
+    }
+
     ui->forceEdit->setText( str );
+    force_kg = str.toDouble();
 }
 
 /***********************************************/
@@ -239,6 +274,7 @@ void MainWindow::updateElectricParameters()
     ui->resistanceEdit->setText( QString::number( resistance ) );
 }
 
+/***********************************************/
 void MainWindow::updateTemperature()
 {
     temperature = rs485_serial->temperature;
@@ -249,16 +285,25 @@ void MainWindow::updateTemperature()
 void MainWindow::connect_clicked()
 {
     if ( sender() == ui->forceConnectButton ) {
-        force_ui->portName = ui->forceComboBox->currentText();
-        force_ui->saveSettings();
-        qDebug() << "force port " << force_ui->portName;
+//        if (ui->forceConnectButton->isChecked() ) {
+            force_ui->portName = ui->forceComboBox->currentText();
+            force_ui->saveSettings();
+            qDebug() << "force port " << force_ui->portName;
+//        }
         force_serial->connect_clicked();
     } else if ( sender() == ui->stepperConnectButton ) {
-        stepper_ui->portName = ui->stepperComboBox->currentText();
-        stepper_ui->saveSettings();
-        qDebug() << "stepper port " << stepper_ui->portName;
+//        if (ui->forceConnectButton->isChecked() ) {
+
+            stepper_ui->portName = ui->stepperComboBox->currentText();
+            stepper_ui->saveSettings();
+            qDebug() << "stepper port " << stepper_ui->portName;
+//        }
+
         stepper_serial->connect_clicked();
-        stepper_ui->sendPassword();
+
+//        if (ui->forceConnectButton->isChecked() ) {
+            stepper_ui->sendPassword();
+//        }
 
     } else if ( sender() == ui->modbusConnectButton ) {
         rs485_serial->portName = ui->modbusComboBox->currentText();
@@ -266,10 +311,13 @@ void MainWindow::connect_clicked()
         rs485_serial->on_connectButton_clicked();
 
     } else if ( sender() == ui->encoderConnectButton ) {
-        encoder_ui->portName = ui->encoderBox->currentText();
-        encoder_ui->saveSettings();
-        qDebug() << "encoder port " << encoder_ui->portName;
-        encoder_port->connect_clicked();
+//        if (ui->forceConnectButton->isChecked() ) {
+            encoder_ui->portName = ui->encoderBox->currentText();
+            encoder_ui->saveSettings();
+            qDebug() << "encoder port " << encoder_ui->portName;
+//        }
+
+        encoder_serial->connect_clicked();
     }
 }
 
@@ -288,25 +336,26 @@ void MainWindow::changeButtonText(bool state)
         } else {
             ui->stepperConnectButton->setText( "Подлючиться" );
         }
-    } else if ( sender() == stepper_ui  ) {
-        if ( state ) {
-            ui->lineSwitchButton->setText( "Снять напряжение" );
-        } else {
-            ui->lineSwitchButton->setText( "Подать напряжение" );
-        }
     } else if ( sender() == rs485_serial ) {
         if ( state ) {
             ui->modbusConnectButton->setText( "Отключиться" );
         } else {
             ui->modbusConnectButton->setText( "Подлючиться" );
         }
-    } else if ( sender() == encoder_port ) {
+    } else if ( sender() == encoder_serial ) {
         if ( state ) {
             ui->encoderConnectButton->setText( "Отключиться" );
         } else {
             ui->encoderConnectButton->setText( "Подлючиться" );
         }
-    }
+    } else if ( sender() == stepper_ui  ) {
+            if ( state ) {
+                ui->lineSwitchButton->setText( "Снять напряжение" );
+            } else {
+                ui->lineSwitchButton->setText( "Подать напряжение" );
+            }
+        }
+
 }
 
 /***********************************************/
@@ -322,19 +371,42 @@ void MainWindow::updateTime()
 }
 
 /***********************************************/
+void MainWindow::updateState()
+{
+    if ( checkSerials() != 0 ) {
+        setStateButtonColor( Qt::red );
+        return;
+    }
+
+    if ( abs(force_kg) > ui->forceLimitBox->value() ) {
+        setStateButtonColor( Qt::yellow );
+        return;
+    }
+
+    if ( isSerialAlive() != 0 ) {
+        setStateButtonColor( Qt::blue );
+        return;
+    }
+
+    //Finally everything's OK
+    setStateButtonColor( Qt::green );
+}
+
+/***********************************************/
 void MainWindow::updateStopFlag( bool checked )
 {
     stop_flag = checked;
     qDebug() << "STOP state: " << stop_flag;
     if (stop_flag) {
+        ui->autoStartButton->setEnabled(false);
+        ui->stepBackwardButton->setEnabled(false);
+        ui->stepForwardButton->setEnabled(false);
         emit resetStepperSupply();
+    } else {
+        ui->autoStartButton->setEnabled(true);
+        ui->stepBackwardButton->setEnabled(true);
+        ui->stepForwardButton->setEnabled(true);
     }
-}
-
-/***********************************************/
-void MainWindow::setOperatorName(QString name)
-{
-    ui->operatorNameEdit->setText(name);
 }
 
 /***********************************************/
@@ -383,6 +455,13 @@ void MainWindow::modeChanged( int mode )
     }
 }
 
+
+/***********************************************/
+void MainWindow::setOperatorName(QString name)
+{
+    ui->operatorNameEdit->setText(name);
+}
+
 /***********************************************/
 void MainWindow::searchSerialPorts()
 {
@@ -401,26 +480,58 @@ void MainWindow::searchSerialPorts()
     qDebug() << "Port search.";
 
 }
-
-
-void MainWindow::setSerialSettings()
-{
-
-}
-
 /***********************************************/
 
+/****************************/
+/*   Manual mode block      */
+/****************************/
+void MainWindow::updateManualStep( double step_mm )
+{
+    double steps_n = step_mm * stepper_ui->step_per_mm;
+    manual_step_number = static_cast<uint32_t>( ceil( steps_n ) );
+    stepper_ui->step_number = manual_step_number;
+    qDebug() << "Manual step update:" << stepper_ui->step_number;
+}
 
-/*
- * Here starts automatic mode
-*/
+void MainWindow::gotStepBackward()
+{
+    if (stop_flag)
+        return;
+
+    emit doStepBackward();
+}
+
+void MainWindow::gotStepForward()
+{
+    if (stop_flag)
+        return;
+
+    emit doStepForward();
+}
+
+
+/****************************/
+/*   Automatic mode block   */
+/****************************/
 void MainWindow::startAuto()
 {
     if ( checkProtocolHeader() != 0 ) {
+        qDebug() << "Invalid protocol header";
         return;
     }
 
     if ( checkConnectionStates() != 0 ) {
+        qDebug() << "Invalid connection states";
+        return;
+    }
+
+    int res = isSerialAlive();
+    if ( res != 0 ) {
+        setStateButtonColor( Qt::blue );
+        qDebug() << "Failed to check if device is alive | res:" << res;
+        QMessageBox msgBox;
+        msgBox.setText("Потеряна связь с устройством!");
+        msgBox.exec();
         return;
     }
 
@@ -434,40 +545,201 @@ void MainWindow::startAuto()
 
     protocolFile = new QFile(ui->protocolNameEdit->text() + ".txt" );
     protocolFile->open(QIODevice::ReadWrite | QIODevice::Text);
-    bool dir_flag = ui->reverseCheckBox->isChecked();
 
     qDebug() << "Number of points: " << stepNumber;
     printProtocolHeader();
     printCsvHeader();
 
-    printString();
-    printCsvString();
+    stepDoneNumber = 0;
+
+    measuringTimeoutTimer->start();
+    isBusy = true;
 
     // Zero position
-    for ( i = 0; i <= stepNumber; i++ )
-    {
-        // Если нет СТОПа, то делаем шаг
-        if ( !stop_flag ) {
-            if ( dir_flag ) {
-                emit doStepForward(); // вверх
-            } else {
-                emit doStepBackward(); // вниз
-            }
-            printString();
-            printCsvString();
+//    for ( i = 0; i <= stepNumber; i++ )
+//    {
+//        /*
+//         * Protection part of auto mode
+//         */
 
-            ui->pointsLeftEdit->setText( QString::number( stepNumber - i ) );
-            spec_delay();
-        }
-    }
+////        if (state != OK) {
+////            qDebug() << "State is not OK. Finish auto";
+////        }
 
-    protocolFile->close();
-    protocolCsvFile->close();
-    delete protocolFile;
-    delete protocolCsvFile;
+//        if ( checkConnectionStates() != 0 ) {
+//            setStateButtonColor( Qt::red );
+//            qDebug() << "Failed to find some device";
+//            break;
+//        }
+
+//        int res = isSerialAlive();
+//        if ( res != 0 ) {
+//            setStateButtonColor( Qt::blue );
+//            qDebug() << "Failed to check if device is alive | res:" << res;
+//            QMessageBox msgBox;
+//            msgBox.setText("Потеряна связь с устройством!");
+//            msgBox.exec();
+//            break;
+//        }
+
+//        if ( abs(force_kg) > ui->forceLimitBox->value() ) {
+//            setStateButtonColor( Qt::yellow );
+//            if ( dir_flag ) {
+//                emit doStepBackward(); // Отступить на шаг вниз
+//            } else {
+//                emit doStepForward(); // Оступить на шаг вверх
+//            }
+//            QMessageBox msgBox;
+//            msgBox.setText("Превышен предел силы!");
+//            msgBox.exec();
+
+//            break;
+//        }
+
+//        /*
+//         * End of protection
+//         */
+
+//        // Если нет СТОПа, то делаем шаг
+//        if ( !stop_flag ) {
+//            printString();
+//            printCsvString();
+
+//            if ( dir_flag ) {
+//                emit doStepForward(); // вверх
+//            } else {
+//                emit doStepBackward(); // вниз
+//            }
+//            ui->pointsLeftEdit->setText( QString::number( stepNumber - i ) );
+//            setStateButtonColor( Qt::green );
+//            spec_delay();
+//        }
+//    }
 }
 
 /***********************************************/
+void MainWindow::measureNextPoint()
+{
+
+    bool dir_flag = ui->reverseCheckBox->isChecked();
+    /*
+     * Protection part of auto mode
+     */
+
+//    if ( checkConnectionStates() != 0 ) {
+//        setStateButtonColor( Qt::red );
+//        qDebug() << "Failed to find some device";
+//        endMeasuring();
+//    }
+
+//    int res = isSerialAlive();
+//    if ( res != 0 ) {
+//        setStateButtonColor( Qt::blue );
+//        qDebug() << "Failed to check if device is alive | res:" << res;
+//        QMessageBox msgBox;
+//        msgBox.setText("Потеряна связь с устройством!");
+//        msgBox.exec();
+//        endMeasuring();
+//    }
+
+    if ( abs(force_kg) > ui->forceLimitBox->value() ) {
+        setStateButtonColor( Qt::yellow );
+//        emit weAreGoingToBreakSensor();
+        motorSupplyOffTimer->start();
+
+        if ( dir_flag ) {
+            emit doStepBackward(); // Отступить на шаг вниз
+        } else {
+            emit doStepForward(); // Оступить на шаг вверх
+        }
+
+        endMeasuring();
+        QMessageBox msgBox;
+        msgBox.setText("Превышен предел силы!");
+        msgBox.exec();
+        return;
+
+    }
+
+    /*
+     * End of protection
+     */
+
+    // Если нет СТОПа, то делаем шаг
+    if ( !stop_flag ) {
+        printString();
+        printCsvString();
+
+        if ( dir_flag ) {
+            emit doStepForward(); // вверх
+        } else {
+            emit doStepBackward(); // вниз
+        }
+        stepDoneNumber++;
+        ui->pointsLeftEdit->setText( QString::number( stepNumber - stepDoneNumber ) );
+        setStateButtonColor( Qt::green );
+    } else {
+        endMeasuring();
+        return;
+    }
+
+    qDebug() << "stepDoneNumber" << stepDoneNumber << "stepNumber" << stepNumber;
+
+    if (stepDoneNumber == stepNumber) {
+        endMeasuring();
+        return;
+    } else {
+        // Снова взводим таймер для следующего шага
+        measuringTimeoutTimer->start();
+    }
+
+    return;
+}
+
+/***********************************************/
+void MainWindow::endMeasuring()
+{
+    qDebug() << "got end measuring";
+    measuringTimeoutTimer->stop();
+    ui->autoStopButton->setChecked(true);
+    updateStopFlag(true);
+
+    if (protocolFile) {
+        protocolFile->close();
+        delete protocolFile;
+    }
+
+    if (protocolCsvFile) {
+        protocolCsvFile->close();
+        delete protocolCsvFile;
+    }
+
+    isBusy = false;
+}
+
+/***********************************************/
+void MainWindow::spec_delay()
+{
+//    QTime dieTime= QTime::currentTime().addSecs(2);
+//    while (QTime::currentTime() < dieTime)
+//        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+}
+
+/***********************************************/
+void MainWindow::calculateStepNumber( double val )
+{
+    if ( ui->stepSizeBox->value() != 0 ) {
+        stepNumber = static_cast<int>(ui->workingStrokeBox->value() / ui->stepSizeBox->value() );
+        ui->stepNumberEdit->setText( QString::number( stepNumber ) );
+    }
+
+    double steps_n = ui->stepSizeBox->value() * stepper_ui->step_per_mm;
+    auto_step_number = static_cast<uint32_t>( ceil( steps_n ) );
+}
+
+/****************************/
+/*     Protocol block       */
+/****************************/
 int MainWindow::checkProtocolHeader()
 {
     if ( ui->protocolNameEdit->text().isEmpty() ) {
@@ -510,6 +782,23 @@ int MainWindow::checkProtocolHeader()
 }
 
 /***********************************************/
+int MainWindow::checkSerials()
+{
+    if ( !force_serial->isOpened() )
+       return -1;
+
+    if ( !stepper_serial->isOpened() )
+       return -2;
+
+    if ( !rs485_serial->isModbusConnected() )
+       return -3;
+
+    if ( !encoder_serial->isOpened() )
+       return -3;
+
+    return 0;
+}
+
 
 int MainWindow::checkConnectionStates()
 {
@@ -534,14 +823,53 @@ int MainWindow::checkConnectionStates()
        return -3;
     }
 
-    if ( !encoder_port->isOpened() ) {
+    if ( !encoder_serial->isOpened() ) {
        QMessageBox msgBox;
-       msgBox.setText("Отсутствует связь с экнодером");
+       msgBox.setText("Отсутствует связь с энкодером");
        msgBox.exec();
        return -3;
     }
 
     return 0;
+}
+
+/***********************************************/
+int MainWindow::isSerialAlive()
+{
+    if ( !force_ui->isAlive() ) {
+        qDebug() << "Отсутствует связь с весовым терминалом";
+        emit reconnectForceWindow();
+        return -1;
+    }
+
+    if ( !encoder_ui->isAlive() ) {
+        qDebug() << "Отсутствует связь с энкодером";
+        emit reconnectEncoder();
+        return -3;
+    }
+
+    return 0;
+}
+
+void MainWindow::setStateButtonColor(int colorCode)
+{
+    switch (colorCode) {
+        default:
+        case Qt::red:
+            ui->connectionStateButton->setStyleSheet( "background-color: red;");
+            break;
+
+        case Qt::yellow:
+            ui->connectionStateButton->setStyleSheet( "background-color: yellow;");
+            break;
+
+        case Qt::green:
+            ui->connectionStateButton->setStyleSheet( "background-color: green;");
+            break;
+        case Qt::blue:
+            ui->connectionStateButton->setStyleSheet( "background-color: blue;");
+            break;
+    }
 }
 
 /***********************************************/
@@ -552,16 +880,11 @@ void MainWindow::printProtocolHeader()
 
     QTextStream stream(protocolFile);
     stream << date.currentDate().toString()
-           << " " << time.currentTime().toString()
-           << "  \n"
-           << " " << "Operator name \t" << ui->operatorNameEdit->text()
-           << "  \n"
-           << " " << "Solenoid type \t" << ui->solenoidTypeEdit->text()
-           << "  \n"
-           << " " << "Step size \t" << QString::number( ui->stepSizeBox->value() )
-           << "  \n"
-           << " " << "Working stroke \t" << QString::number( ui->workingStrokeBox->value() )
-           << "  \n";
+           << " " << time.currentTime().toString() << "  \n"
+           << " " << "Operator name \t" << ui->operatorNameEdit->text() << "  \n"
+           << " " << "Solenoid type \t" << ui->solenoidTypeEdit->text() << "  \n"
+           << " " << "Step size \t" << QString::number( ui->stepSizeBox->value() ) << "  \n"
+           << " " << "Working stroke \t" << QString::number( ui->workingStrokeBox->value() ) << "  \n";
 }
 
 /***********************************************/
@@ -577,6 +900,7 @@ void MainWindow::printString()
            << "  \n";
 }
 
+/***********************************************/
 void MainWindow::printCsvHeader()
 {
     QDate date;
@@ -584,65 +908,35 @@ void MainWindow::printCsvHeader()
 
     QTextStream stream(protocolCsvFile);
     stream << date.currentDate().toString()
-           << " " << time.currentTime().toString()
-           << "  \n"
-           << " " << "Operator name;" << ui->operatorNameEdit->text()
-           << "  \n"
-           << " " << "Solenoid type;" << ui->solenoidTypeEdit->text()
-           << "  \n"
-           << " " << "Step size;" << QString::number( ui->stepSizeBox->value() )
-           << "  \n"
-           << " " << "Working stroke;" << QString::number( ui->workingStrokeBox->value() )
-           << "  \n";
+           << " " << time.currentTime().toString() << "  \n"
+           << " " << "Operator name;" << ui->operatorNameEdit->text() << "  \n"
+           << " " << "Solenoid type;" << ui->solenoidTypeEdit->text() << "  \n"
+           << " " << "Step size;" << QString::number( ui->stepSizeBox->value() ) << "  \n"
+           << " " << "Working stroke;" << QString::number( ui->workingStrokeBox->value() ) << "  \n";
 
     //Table headers
     stream << " " << "Time"
            << ";" << "Position, mm"
            << ";" << "Force, kg"
            << ";" << "Current phase A, A"
-           << ";" << "Temperature, Celcius"
-           << "  \n";
-
-
+           << ";" << "Temperature, Celcius" << "\n";
 }
 
+/***********************************************/
 void MainWindow::printCsvString()
 {
     QTime time;
     QTextStream stream(protocolCsvFile);
-
     stream << " " << time.currentTime().toString()
            << ";" << ui->currentPositionEdit->text()
-           << ";" << ui->forceEdit->text()
+           << ";" << ui->forceEdit->text().toDouble()
            << ";" << currentPhaseA
-           << ";" << ui->temperatureEdit->text()
-           << "  \n";
+           << ";" << ui->temperatureEdit->text() << "\n";
 }
 
-/***********************************************/
-void MainWindow::spec_delay()
-{
-    QTime dieTime= QTime::currentTime().addSecs(2);
-    while (QTime::currentTime() < dieTime)
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-}
-
-/***********************************************/
-void MainWindow::calculateStepNumber( double val )
-{
-    if ( ui->stepSizeBox->value() != 0 ) {
-        stepNumber = ui->workingStrokeBox->value() /
-            ui->stepSizeBox->value();
-    }
-
-    ui->stepNumberEdit->setText( QString::number( stepNumber ) );
-    double steps_n = ui->stepSizeBox->value() * stepper_ui->step_per_mm;
-    auto_step_number = static_cast<uint32_t>( ceil( steps_n ) );
-}
-
-/*
- * Settings
-*/
+/****************************/
+/*  Serial setting block    */
+/****************************/
 void MainWindow::writeSettings()
 {
     settings->setValue("app/pos", pos());
@@ -703,53 +997,50 @@ void MainWindow::loadSettings()
     force_ui->m_settingsDialog->setBaud( force_baud );
     qDebug() << "force" << force_serial->SettingsPort.name << " /baud " << force_baud;
 
-
     //Encoder
 //    encoder_ui->portName = settings->value( "encoder/port" ).toString();
-    encoder_port->SettingsPort.name = settings->value( "encoder/port" ).toString();
-    int encoder_index = ui->encoderBox->findText( encoder_port->SettingsPort.name );
+    encoder_serial->SettingsPort.name = settings->value( "encoder/port" ).toString();
+    int encoder_index = ui->encoderBox->findText( encoder_serial->SettingsPort.name );
     ui->encoderBox->setCurrentIndex( encoder_index );
     int encoder_baud = settings->value( "encoder/baud" ).toInt();
     encoder_ui->m_settingsDialog->setBaud( encoder_baud );
-    qDebug() << "encoder" << encoder_port->SettingsPort.name << " /baud " << encoder_baud;
-
-
+    qDebug() << "encoder" << encoder_serial->SettingsPort.name << " /baud " << encoder_baud;
     qDebug() << "Настройки считаны";
-//    qDebug() << "modbus port" << rs485_serial->portName;
-//    qDebug() << "stepper port" << stepper_serial->SettingsPort.name;
-//    qDebug() << "force port" << force_serial->SettingsPort.name;
-//    qDebug() << "force port" << force_serial->SettingsPort.name;
-
-
 }
-
-
 /*********************************************/
-
-/*
- * Manual mode
-*/
-void MainWindow::updateManualStep( double step_mm )
+void MainWindow::lineSwitchClicked()
 {
-    double steps_n = step_mm * stepper_ui->step_per_mm;
-    manual_step_number = static_cast<uint32_t>( ceil( steps_n ) );
-    stepper_ui->step_number = manual_step_number;
-    qDebug() << "Manual step update:" << stepper_ui->step_number;
+    if (ui->lineSwitchButton->isChecked()) {
+        stepper_ui->relayOn();
+    } else {
+        stepper_ui->relayOff();
+    }
 }
-
 /***********************************************/
 
+void MainWindow::testSlot()
+{
+    for (int i = 0; i < 50; i++) {
+        QString str;
+        str.append("debug_test");
+        str.append( QString::number(i) );
+        ui->protocolNameEdit->setText( str );
+        ui->autoStopButton->setChecked(false);
+        updateStopFlag(false);
+
+        ui->reverseCheckBox->setChecked(false);
+        startAuto();
+        while (isBusy) {
+            QApplication::processEvents();
+        }
+
+        ui->reverseCheckBox->setChecked(true);
+        startAuto();
+        while (isBusy) {
+            QApplication::processEvents();
+        }
 
 
-
-//void MainWindow::changeLineSwitch()
-//{
-//    if ( ui->lineSwitchButton->isChecked() ) {
-//        ui->lineSwitchButton->setText( tr("Снять напряжение") );
-//        stepper_ui->slotSetRele();
-//    } else {
-//        ui->lineSwitchButton->setText( tr("Подать напряжение") );
-//        stepper_ui->slotClearRele();
-//    }
-//}
+    }
+}
 

@@ -5,8 +5,8 @@
 #include <QDebug>
 #include <QTimer>
 
-//step_number(66) = 0,4 ìì íà øòîêå
-//step_number(82) = 0,5 ìì íà øòîêå
+//step_number(66) = 0,4 Ð¼Ð¼ Ð½Ð° ÑˆÑ‚Ð¾ÐºÐµ
+//step_number(82) = 0,5 Ð¼Ð¼ Ð½Ð° ÑˆÑ‚Ð¾ÐºÐµ
 
 // Tuning constant depends on mechanic
 //int step_per_mm = 164;
@@ -18,26 +18,29 @@ StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow(
     speed_limit(1000),
     abs_position(0),
     passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } ),
-    isRelayOn(false)
+    isRelayOn(false),
+    passwd_length(8)
 {
     port = ext_port;
-    passwd_length = 8;
     m_settingsDialog = new SettingsDialog(this);
-    receiveFlag = false;
-    sendFlag = false;
-//    mutex = new QMutex();
 
     connect(port, SIGNAL(outPortByteArray(QByteArray)), this, SLOT(getResponse(QByteArray)));
     connect(this, &StepperControl::writeCmdToPort, port, &Port::WriteToPort);
-//    connect(this, &StepperControl::hasAnswer, this, &StepperControl::processVector );
 }
 
 StepperControl::~StepperControl()
 {
-    resetMotorSupply();
-
+    disableElectricity();
     //Here we stop talking with stepper driver
-    port->closePort();
+//    port->closePort();
+}
+
+void StepperControl::disableElectricity()
+{
+    qDebug() << "GOT disableElectricity";
+
+    relayOff();
+    resetMotorSupply();
 }
 
 void StepperControl::resetMotorSupply()
@@ -95,19 +98,29 @@ void StepperControl::sendPassword()
     qDebug() << "sendPassword" << arr;
 }
 
+void StepperControl::initialize()
+{
+    //    sendCommandPowerStep( CMD_PowerSTEP01_RESET_POS, 0 );
+    //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
+    //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
+    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
+
+}
+
+
 void StepperControl::getResponse( QByteArray arr )
 {
     in_message_t cmd = deserialize( arr );
 
     if ( cmd.CMD_TYPE == CODE_CMD_RESPONSE ) {
         if (cmd.DATA.ERROR_OR_COMMAND == ErrorList::OK_ACCESS ) {
-            qDebug() << "Óñïåøíàÿ àâòîðèçàöèÿ (USB)";
+            qDebug() << "Ð£ÑÐ¿ÐµÑˆÐ½Ð°Ñ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ñ (USB)";
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR ) {
-            qDebug() << "Îøèáêà êîíòðîëüíîé ñóììû" << cmd.DATA.ERROR_OR_COMMAND;
+            qDebug() << "ÐžÑˆÐ¸Ð±ÐºÐ° ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»ÑŒÐ½Ð¾Ð¹ ÑÑƒÐ¼Ð¼Ñ‹" << cmd.DATA.ERROR_OR_COMMAND;
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET ) {
-            qDebug() << "Ðåëå ÂÊË" << cmd.DATA.ERROR_OR_COMMAND;
+            qDebug() << "Ð ÐµÐ»Ðµ Ð’ÐšÐ›" << cmd.DATA.ERROR_OR_COMMAND;
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_CLR ) {
-            qDebug() << "Ðåëå ÂÛÊË" << cmd.DATA.ERROR_OR_COMMAND;
+            qDebug() << "Ð ÐµÐ»Ðµ Ð’Ð«ÐšÐ›" << cmd.DATA.ERROR_OR_COMMAND;
         } else {
             qDebug() << "Response error: " << cmd.DATA.ERROR_OR_COMMAND;
         }
@@ -135,8 +148,6 @@ void StepperControl::getResponse( QByteArray arr )
         }
 
     }
-
-//    emit hasAnswer();
 }
 
 void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data )
@@ -230,11 +241,11 @@ in_message_t StepperControl::deserialize(const QByteArray& byteArray)
     QByteArray localArray = byteArray;
     if( localArray.size() < 13 )
     {
-        qDebug() << "Íåïðàâèëüíàÿ êîìàíäà!";
+        qDebug() << "ÐÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð°Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ð°!";
         return cmd;
     } else if ( localArray.size() > 13 ) {
         if ( localArray.contains( 0xFE ) )
-            qDebug() << "Ñïåöèàëüíûé ñèìâîë!";
+            qDebug() << "Ð¡Ð¿ÐµÑ†Ð¸Ð°Ð»ÑŒÐ½Ñ‹Ð¹ ÑÐ¸Ð¼Ð²Ð¾Ð»!";
     }
 
     localArray.remove( 0, 1 ); // leading 0xFA
@@ -284,19 +295,10 @@ void StepperControl::stepBackward()
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_R, step_number );
 }
 
-void StepperControl::slotInit()
-{
-//    sendCommandPowerStep( CMD_PowerSTEP01_RESET_POS, 0 );
-//    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
-//    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
-    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
-
-}
-
-void StepperControl::slotSend()
-{
-    sendPassword();
-}
+//void StepperControl::slotSend()
+//{
+//    sendPassword();
+//}
 
 void StepperControl::slotGetPos()
 {
@@ -311,26 +313,6 @@ void StepperControl::slotSetSpeed()
 
 }
 
-//void StepperControl::slotSetRele()
-//{
-//    sendCommandPowerStep( CMD_PowerSTEP01_SET_RELE, 0 );
-////    sendCommandPowerStep( CMD_PowerSTEP01_FUCK_SET_RELAY, 0 );
-//}
-
-//void StepperControl::slotClearRele()
-//{
-//    sendCommandPowerStep( CMD_PowerSTEP01_CLR_RELE, 0 );
-//}
-
-//void StepperControl::processVector()
-//{
-//    mutex->lock();
-//    QByteArray arr = command_buf.takeFirst();
-//    mutex->unlock();
-//    emit writeCmdToPort( arr );
-//    qDebug() << "sendCommandPowerStep" << arr;
-//}
-
 void StepperControl::updateStepNumber( double step_mm )
 {
     step_number = static_cast <uint32_t>( step_mm * step_per_mm );
@@ -338,6 +320,7 @@ void StepperControl::updateStepNumber( double step_mm )
 
 void StepperControl::relayOn()
 {
+    qDebug() << "Sending relay ON";
     sendCommandPowerStep( CMD_PowerSTEP01_SET_RELE, 0 );
     isRelayOn = true;
     emit isLineSwitchOn( isRelayOn );
@@ -345,18 +328,19 @@ void StepperControl::relayOn()
 
 void StepperControl::relayOff()
 {
+    qDebug() << "Sending relay OFF";
     sendCommandPowerStep( CMD_PowerSTEP01_CLR_RELE, 0 );
     isRelayOn = false;
     emit isLineSwitchOn( isRelayOn );
 }
 
-void StepperControl::lineSwitchClicked(bool isPressed)
+void StepperControl::lineSwitchClicked()
 {
     if ( isRelayOn ) {
-        qDebug() << "relay OFF";
+//        qDebug() << "relay OFF";
         relayOff();
     } else {
-        qDebug() << "relay ON";
+//        qDebug() << "relay ON";
         relayOn();
     }
 }

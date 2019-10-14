@@ -11,9 +11,10 @@
 
 QScopedPointer<QFile>   m_logFile;
 
-// Реализация обработчика
+// Р РµР°Р»РёР·Р°С†РёСЏ РѕР±СЂР°Р±РѕС‚С‡РёРєР°
 void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    Q_UNUSED(context);
     QTextStream out(m_logFile.data());
     out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz ");
     switch ( type ) {
@@ -46,8 +47,8 @@ int main(int argc, char *argv[])
     logFilePath = logDirPath + "/File" + QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm") + ".txt";
     m_logFile.reset(new QFile(logFilePath));
     m_logFile.data()->open(QFile::Append | QFile::Text);
-    // Устанавливаем обработчик (перенаправление отладки)
-    qInstallMessageHandler(messageHandler);
+    // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕР±СЂР°Р±РѕС‚С‡РёРє (РїРµСЂРµРЅР°РїСЂР°РІР»РµРЅРёРµ РѕС‚Р»Р°РґРєРё)
+//    qInstallMessageHandler(messageHandler);
 
     MainWindow w;
     w.show();

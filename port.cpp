@@ -1,10 +1,13 @@
 #include "port.h"
 #include <QDebug>
+#include <QMessageBox>
+
+#include <QThread>
 
 Port::Port(QObject *parent) :
-    QObject(parent)
+    QObject(parent),
+    portMode(0)
 {
-//    qDebug() << "New serial port" << this;
 }
 
 Port::~Port()
@@ -12,9 +15,15 @@ Port::~Port()
     emit finished_Port();
 }
 
+//Q_DECLARE_METATYPE(QSerialPort::SerialPortError);
 void Port::process_Port()
 {
-    connect(&thisPort, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(handleError(QSerialPort::SerialPortError)));
+
+    qDebug() << "New serial port" << this;
+
+    qRegisterMetaType<QSerialPort::SerialPortError>("QSerialPort::SerialPortError");
+
+    connect(&thisPort, &QSerialPort::errorOccurred, this, &Port::handleError);
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
     connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
@@ -30,6 +39,11 @@ void Port::setPortSettings(QString name, int baudrate,int DataBits,
     SettingsPort.flowControl = (QSerialPort::FlowControl) FlowControl;
 }
 
+void Port::setPortOpenMode(QIODevice::OpenModeFlag flag)
+{
+    portMode = flag;
+}
+
 void Port::openPort()
 {
     thisPort.setPortName(SettingsPort.name);
@@ -43,7 +57,7 @@ void Port::openPort()
             if ( thisPort.isOpen() ) {
                 error_((SettingsPort.name + " >> Открыт!\r").toLocal8Bit());
                 qDebug() << thisPort.portName() << " serial port opened";
-                emit isConnected(true);
+                emit connectionStateChanged(true);
             }
         } else {
             thisPort.close();
@@ -68,7 +82,7 @@ void Port::closePort()
     if ( thisPort.isOpen() ) {
         thisPort.close();
         error_(SettingsPort.name.toLocal8Bit() + " >> Закрыт!\r");
-        emit isConnected(false);
+        emit connectionStateChanged(false);
     }
 }
 
@@ -83,11 +97,17 @@ void Port::ReadInPort()
 {
     QByteArray data;
     data.append(thisPort.readAll());
-    outPortByteArray(data);
-    outPort(data);
-    emit hasAnswer();
-
+    emit outPortByteArray(data);
+    emit outPort(data);
 }
+
+//void Port::readyReadSlot()
+//{
+//    while (!thisPort.atEnd()) {
+//        QByteArray data = thisPort.readAll();
+//        qDebug() << "data in Port" << data;
+//    }
+//}
 
 void Port::errorHandler( QString err )
 {
@@ -96,6 +116,9 @@ void Port::errorHandler( QString err )
 
 void Port::connect_clicked()
 {
+//    if (thisPort != nullptr )
+//        return;
+
     if ( thisPort.isOpen() ) {
         closePort();
     } else {
@@ -106,4 +129,10 @@ void Port::connect_clicked()
 bool Port::isOpened()
 {
     return thisPort.isOpen();
+}
+
+void Port::reconnectPort()
+{
+    closePort();
+    openPort();
 }

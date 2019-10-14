@@ -18,10 +18,9 @@ enum ModbusConnection {
 };
 
 ModbusListener::ModbusListener(QWidget *parent)
-    : QMainWindow(parent)
-//    , ui(new Ui::ModbusListener)
-    , lastRequest(nullptr)
-    , modbusDevice(nullptr)
+    : QMainWindow(parent),
+      modbusDevice(nullptr),
+      lastRequest(nullptr)
 {
     slaveNumber = 0;
     timer = new QTimer();

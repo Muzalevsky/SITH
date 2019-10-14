@@ -8,6 +8,7 @@
 #include <QDate>
 #include <QFile>
 #include <QMainWindow>
+#include <QCloseEvent>
 
 #include "port.h"
 #include "steppercontrol.h"
@@ -19,7 +20,6 @@
 #define ORGANIZATION_NAME "LETI"
 #define ORGANIZATION_DOMAIN "www.etu.ru"
 #define APPLICATION_NAME "SITH Control program"
-
 
 enum WorkingModes
 {
@@ -46,10 +46,16 @@ private:
 
     void writeSettings();
     void loadSettings();
-    void readSettings();
 
     int checkProtocolHeader();
     int checkConnectionStates();
+    int checkSerials();
+
+
+    int isSerialAlive();
+    void setStateButtonColor(int colorCode);
+
+    void closeEvent(QCloseEvent *event);
 
     QWidget             *mainwidget;
     QSettings           *settings;
@@ -58,15 +64,17 @@ private:
     QFile               *protocolCsvFile;
 
     Port                *force_serial;
-    ModbusListener      *rs485_serial;
     Port                *stepper_serial;
-    Port                *encoder_port;
+    Port                *encoder_serial;
 
+    ModbusListener      *rs485_serial;
     EncoderControl      *encoder_ui;
     ForceWindow         *force_ui;
     StepperControl      *stepper_ui;
 
     QTimer              *update_timer;
+    QTimer              *measuringTimeoutTimer;
+    QTimer              *motorSupplyOffTimer;
 
     uint32_t            manual_step_number;
     uint32_t            auto_step_number;
@@ -85,12 +93,22 @@ private:
     QString             position_raw;
     float               force_kg;
     int                 stepNumber;
+    int                 stepDoneNumber;
     bool                stop_flag;
+    bool                isBusy;
 signals:
     void doStepForward();
     void doStepBackward();
     void resetStepperSupply();
+    void reconnectForceWindow();
+    void reconnectEncoder();
+    void goingToClose();
+    void weAreGoingToBreakSensor();
+
 public slots:
+    void testSlot();
+
+    void lineSwitchClicked();
     void updateElectricParameters();
     void updateForceValue( QString str );
     void updateManualStep( double );
@@ -98,22 +116,30 @@ public slots:
     void updateStopFlag( bool );
     void updateTemperature();
     void updateTime();
+    void updateState();
+
+    void endMeasuring();
 
     void calculateStepNumber(double val);
     void connect_clicked();
     void changeButtonText(bool);
     void modeChanged(int);
 
+    //Protocol processing
     void printProtocolHeader();
     void printCsvHeader();
     void printCsvString();
     void printString();
 
     void searchSerialPorts();
-    void setSerialSettings();
-    void setZeroForce();
-    void startAuto();
     void setOperatorName(QString);
+    void startAuto();
+
+    void gotStepBackward();
+    void gotStepForward();
+
+    void measureNextPoint();
+
 };
 
 #endif // MAINWINDOW_H

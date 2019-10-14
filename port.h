@@ -3,7 +3,7 @@
 
 #include <QSerialPort>
 #include <QSerialPortInfo>
-
+#include <QTimer>
 struct Settings {
     QString name;
     qint32 baudRate;
@@ -24,15 +24,20 @@ public:
     Settings SettingsPort;
 
     bool isOpened();
+    void setPortOpenMode(QIODevice::OpenModeFlag flag);
+
+private:
+    int portMode;
 signals:
     void finished_Port();
     void error_(QString err);
     void outPort(QString data);
     void outPortByteArray(QByteArray data);
-    void hasAnswer();
-    void isConnected(bool);
+    void connectionStateChanged(bool isConnected);
 
 public slots:
+//    void readyReadSlot();
+
     void closePort();
     void openPort();
     void setPortSettings(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl);
@@ -40,7 +45,7 @@ public slots:
     void WriteToPort(QByteArray data);
     void ReadInPort();
     void connect_clicked();
-
+    void reconnectPort();
 
 private slots:
     void handleError(QSerialPort::SerialPortError error);

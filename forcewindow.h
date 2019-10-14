@@ -21,12 +21,20 @@ public:
     QString         portName;
     void            updateForce( QString);
 
+    bool            isAlive();
 private:
+    bool hasConnection;
 
 public slots:
     void saveSettings();
+//    void reconnectPort();
 
+private slots:
+    void gotTimeout();
 signals:
+    void resetWatchDog();
+    void lostConnection();
+
     void setForceValue( QString );
 
 };

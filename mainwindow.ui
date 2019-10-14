@@ -6,41 +6,69 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1800</width>
-    <height>1000</height>
+    <width>1390</width>
+    <height>690</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1390</width>
+    <height>690</height>
+   </size>
+  </property>
+  <property name="sizeIncrement">
+   <size>
+    <width>2</width>
+    <height>2</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Программа испытаний соленоида</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="icons.qrc">
+    <normaloff>:/images/pipes.png</normaloff>:/images/pipes.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget" native="true">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1800</width>
-     <height>1000</height>
+     <width>1381</width>
+     <height>671</height>
     </rect>
    </property>
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
+   </property>
+   <property name="sizeIncrement">
+    <size>
+     <width>2</width>
+     <height>2</height>
+    </size>
    </property>
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>1700</width>
-      <height>900</height>
+      <width>1361</width>
+      <height>651</height>
      </rect>
     </property>
     <property name="sizePolicy">
-     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>2</horstretch>
+      <verstretch>2</verstretch>
      </sizepolicy>
     </property>
     <property name="currentIndex">
@@ -48,9 +76,9 @@
     </property>
     <widget class="QWidget" name="tab">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+       <horstretch>2</horstretch>
+       <verstretch>2</verstretch>
       </sizepolicy>
      </property>
      <attribute name="title">
@@ -61,8 +89,8 @@
        <rect>
         <x>0</x>
         <y>10</y>
-        <width>1871</width>
-        <height>1001</height>
+        <width>1351</width>
+        <height>611</height>
        </rect>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="0,0,0">
@@ -70,18 +98,87 @@
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <property name="rightMargin">
-        <number>200</number>
+        <number>0</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_9" stretch="4,4,4,4,4,2,3">
+        <layout class="QVBoxLayout" name="verticalLayout_9" stretch="0,4,4,4,4,4,2,3,0">
          <property name="sizeConstraint">
           <enum>QLayout::SetDefaultConstraint</enum>
          </property>
          <property name="bottomMargin">
-          <number>200</number>
+          <number>0</number>
          </property>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_23" stretch="2,2,2,1">
+          <layout class="QHBoxLayout" name="horizontalLayout_28">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="connectionStateButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>50</height>
+              </size>
+             </property>
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Connection</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_7">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Предел силы (кг):</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="forceLimitBox">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="maximum">
+              <number>250</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_10">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_23" stretch="2,2,1">
            <item>
             <widget class="QLabel" name="label_18">
              <property name="sizePolicy">
@@ -109,18 +206,6 @@
              </property>
              <property name="readOnly">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="setZeroForceButton">
-             <property name="font">
-              <font>
-               <pointsize>12</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Обнулить</string>
              </property>
             </widget>
            </item>
@@ -682,6 +767,18 @@
            </item>
           </layout>
          </item>
+         <item>
+          <widget class="QPushButton" name="testButton">
+           <property name="font">
+            <font>
+             <pointsize>27</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>ТЕСТ</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -706,7 +803,7 @@
           <enum>QLayout::SetMinimumSize</enum>
          </property>
          <property name="bottomMargin">
-          <number>200</number>
+          <number>0</number>
          </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_22" stretch="2,3,1">
@@ -1315,6 +1412,9 @@
                  <pointsize>12</pointsize>
                 </font>
                </property>
+               <property name="singleStep">
+                <double>0.200000000000000</double>
+               </property>
               </widget>
              </item>
             </layout>
@@ -1379,229 +1479,376 @@
      </widget>
     </widget>
     <widget class="QWidget" name="tab_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+       <horstretch>2</horstretch>
+       <verstretch>2</verstretch>
+      </sizepolicy>
+     </property>
      <attribute name="title">
       <string>Настройки</string>
      </attribute>
-     <widget class="QWidget" name="verticalLayoutWidget">
+     <widget class="QWidget" name="verticalLayoutWidget_2">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>10</y>
-        <width>611</width>
-        <height>641</height>
+        <x>20</x>
+        <y>30</y>
+        <width>871</width>
+        <height>361</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
-          <widget class="QGroupBox" name="groupBox">
-           <property name="title">
-            <string/>
+          <widget class="QPushButton" name="forceOptionsButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
            </property>
-           <widget class="QWidget" name="verticalLayoutWidget_2">
-            <property name="geometry">
-             <rect>
-              <x>20</x>
-              <y>20</y>
-              <width>549</width>
-              <height>211</height>
-             </rect>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QPushButton" name="forceOptionsButton">
-                 <property name="text">
-                  <string>Настройки</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_3">
-                 <property name="text">
-                  <string>COM-порт Весового терминала</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="forceComboBox"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="forceConnectButton">
-                 <property name="text">
-                  <string>Подключить</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_7">
-               <item>
-                <widget class="QPushButton" name="stepperOptionsButton">
-                 <property name="text">
-                  <string>Настройки</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_4">
-                 <property name="text">
-                  <string>COM-порт Драйвера двигателя</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="stepperComboBox"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="stepperConnectButton">
-                 <property name="text">
-                  <string>Подключить</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_9">
-               <item>
-                <widget class="QPushButton" name="modbusSettingsButton">
-                 <property name="text">
-                  <string>Настройки</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_5">
-                 <property name="text">
-                  <string>COM-порт Modbus</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="modbusComboBox"/>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_6">
-                 <property name="text">
-                  <string>Адрес устройства</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="modbusSlaveBox">
-                 <property name="value">
-                  <number>2</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="modbusConnectButton">
-                 <property name="text">
-                  <string>Подключить</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_6">
-               <item>
-                <widget class="QPushButton" name="encoderSettingsButton">
-                 <property name="text">
-                  <string>Настройки</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_11">
-                 <property name="text">
-                  <string>COM-порт энкодер</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="encoderBox"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="encoderConnectButton">
-                 <property name="text">
-                  <string>Подключить</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </widget>
-           <widget class="QPushButton" name="saveSettingsButton">
-            <property name="geometry">
-             <rect>
-              <x>30</x>
-              <y>260</y>
-              <width>151</width>
-              <height>28</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Сохранить настройки</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="searchSerialButton">
-            <property name="geometry">
-             <rect>
-              <x>370</x>
-              <y>260</y>
-              <width>93</width>
-              <height>28</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Поиск</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="loadSettingsButton">
-            <property name="geometry">
-             <rect>
-              <x>30</x>
-              <y>300</y>
-              <width>151</width>
-              <height>28</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Загрузить настройки</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="relayOnButton">
-            <property name="geometry">
-             <rect>
-              <x>40</x>
-              <y>390</y>
-              <width>151</width>
-              <height>28</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>РЕЛЕ ВКЛ</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="relayOffButton">
-            <property name="geometry">
-             <rect>
-              <x>40</x>
-              <y>440</y>
-              <width>151</width>
-              <height>28</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>РЕЛЕ ВЫКЛ</string>
-            </property>
-           </widget>
+           <property name="text">
+            <string>Настройки</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>COM-порт Весового терминала</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="forceComboBox">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="forceConnectButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Подключить</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QPushButton" name="stepperOptionsButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Настройки</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>COM-порт Драйвера двигателя</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="stepperComboBox"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stepperConnectButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Подключить</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <item>
+          <widget class="QPushButton" name="modbusSettingsButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Настройки</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>COM-порт Modbus</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="modbusComboBox">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Адрес устройства</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="modbusSlaveBox">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="value">
+            <number>2</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="modbusConnectButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Подключить</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QPushButton" name="encoderSettingsButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Настройки</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_11">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>COM-порт энкодер</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="encoderBox">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="encoderConnectButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Подключить</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_29">
+         <item>
+          <spacer name="horizontalSpacer_18">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="searchSerialButton">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Поиск</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_24">
+         <item>
+          <spacer name="horizontalSpacer_20">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="saveSettingsButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Сохранить настройки</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="loadSettingsButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Загрузить настройки</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_30">
+         <item>
+          <spacer name="horizontalSpacer_21">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="relayOnButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>РЕЛЕ ВКЛ</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="relayOffButton">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>РЕЛЕ ВЫКЛ</string>
+           </property>
           </widget>
          </item>
         </layout>
@@ -1612,6 +1859,8 @@
    </widget>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
