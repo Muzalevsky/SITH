@@ -761,11 +761,13 @@ int MainWindow::isSerialAlive()
         return -1;
     }
 
-//    if ( !encoder_ui->isAlive() ) {
-//        qDebug() << "Отсутствует связь с энкодером";
-//        emit reconnectEncoder();
-//        return -3;
-//    }
+#ifndef DEBUG_ENCODER
+    if ( !encoder_ui->isAlive() ) {
+        qDebug() << "Отсутствует связь с энкодером";
+        emit reconnectEncoder();
+        return -3;
+    }
+#endif
 
     return 0;
 }

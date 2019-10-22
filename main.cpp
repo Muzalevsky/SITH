@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     m_logFile.reset(new QFile(logFilePath));
     m_logFile.data()->open(QFile::Append | QFile::Text);
     // Устанавливаем обработчик (перенаправление отладки)
-//    qInstallMessageHandler(messageHandler);
+    qInstallMessageHandler(messageHandler);
 
     MainWindow w;
     w.show();
