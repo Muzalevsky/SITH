@@ -14,12 +14,12 @@
 StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
     step_per_mm(164),
     step_number(82),
+    passwd_length(8),
     default_Ver(0x02),
     speed_limit(1000),
     abs_position(0),
-    passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } ),
     isRelayOn(false),
-    passwd_length(8)
+    passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } )
 {
     port = ext_port;
     m_settingsDialog = new SettingsDialog(this);

@@ -19,7 +19,9 @@ Port::~Port()
 void Port::process_Port()
 {
 
-    qDebug() << "New serial port" << this;
+    qDebug() << "New serial port" << this << "in thread" << this->thread();
+    qDebug() << "Port's parent is" << parent();
+
 
     qRegisterMetaType<QSerialPort::SerialPortError>("QSerialPort::SerialPortError");
 
@@ -55,24 +57,24 @@ void Port::openPort()
              thisPort.setStopBits(SettingsPort.stopBits) &&
              thisPort.setFlowControl(SettingsPort.flowControl) ) {
             if ( thisPort.isOpen() ) {
-                error_((SettingsPort.name + " >> Открыт!\r").toLocal8Bit());
+//                error_(SettingsPort.name + " >> Открыт!");
                 qDebug() << thisPort.portName() << " serial port opened";
                 emit connectionStateChanged(true);
             }
         } else {
             thisPort.close();
-            error_(thisPort.errorString().toLocal8Bit());
+            error_(thisPort.errorString());
         }
     } else {
         thisPort.close();
-        error_(thisPort.errorString().toLocal8Bit());
+        error_(thisPort.errorString());
     }
 }
 
 void Port::handleError(QSerialPort::SerialPortError error)
 {
     if ( (thisPort.isOpen()) && (error == QSerialPort::ResourceError) ) {
-        error_(thisPort.errorString().toLocal8Bit());
+        error_(thisPort.errorString());
         closePort();
     }
 }
@@ -81,7 +83,7 @@ void Port::closePort()
 {
     if ( thisPort.isOpen() ) {
         thisPort.close();
-        error_(SettingsPort.name.toLocal8Bit() + " >> Закрыт!\r");
+        error_(SettingsPort.name + " >> Закрыт!\r");
         emit connectionStateChanged(false);
     }
 }
@@ -111,7 +113,7 @@ void Port::ReadInPort()
 
 void Port::errorHandler( QString err )
 {
-    qDebug() << err.toLocal8Bit();
+    qDebug() << err;
 }
 
 void Port::connect_clicked()

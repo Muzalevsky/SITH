@@ -53,11 +53,11 @@ void ModbusListener::on_connectType_currentIndexChanged(int index)
     modbusDevice = new QModbusRtuSerialMaster(this);
 
     connect(modbusDevice, &QModbusClient::errorOccurred, [this](QModbusDevice::Error) {
-        statusBar()->showMessage(modbusDevice->errorString(), 5000); } );
+        qDebug() << modbusDevice->errorString(); } );
 
     if (!modbusDevice)
     {
-        statusBar()->showMessage(tr("Could not create Modbus master."), 5000);
+        qDebug() << tr("Could not create Modbus master.");
     } else {
         connect(modbusDevice, &QModbusClient::stateChanged,
                 this, &ModbusListener::onStateChanged);
@@ -87,7 +87,7 @@ void ModbusListener::on_connectButton_clicked()
         modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
         if (!modbusDevice->connectDevice())
         {
-            statusBar()->showMessage(tr("Connect failed: ") + modbusDevice->errorString(), 5000);
+            qDebug() << tr("Connect failed: ") << modbusDevice->errorString();
         } else {
             timer->start();
         }
@@ -106,7 +106,9 @@ void ModbusListener::on_readButton_clicked()
 {
     if (!modbusDevice)
         return;
-    statusBar()->clearMessage();
+
+    if(!m_connected)
+        return;
 
     for ( int slave_id = temperature_sensor_address; slave_id <= electrical_sensor_address; slave_id++ )
     {
@@ -128,7 +130,7 @@ void ModbusListener::on_readButton_clicked()
             else
                 delete reply; // broadcast replies return immediately
         } else {
-            statusBar()->showMessage(tr("Read error: ") + modbusDevice->errorString(), 5000);
+            qDebug() << tr("Read error: ") << modbusDevice->errorString();
         }
     }
 }
@@ -166,21 +168,45 @@ void ModbusListener::readReady()
                     voltagePhaseB = entry.toDouble() / 10;
                 if ( i == 36)
                     voltagePhaseC = entry.toDouble() / 10;
+                if ( i == 37){}
+                    //Linear voltage
+                    //voltagePhaseC = entry.toDouble() / 10;
+                if ( i == 38){}
+                    //Linear voltage
+                    //voltagePhaseC = entry.toDouble() / 10;
+                if ( i == 39){}
+                    //Linear voltage
+                    //voltagePhaseC = entry.toDouble() / 10;
+
+
                 if ( i == 40 )
                     currentPhaseA = entry.toDouble() * 8 / 1000;
+                if ( i == 41 )
+                    currentPhaseB = entry.toDouble() * 8 / 1000;
+                if ( i == 42 )
+                    currentPhaseC = entry.toDouble() * 8 / 1000;
+
+
+
                 if ( i == 43 )
                     frequency = entry.toDouble() / 100;
+
+                if ( i == 47 )
+                {
+                    //cos fi
+//                    frequency = entry.toDouble() / 100;
+                }
+
+
             }
             emit getReply();
         }
     } else if (reply->error() == QModbusDevice::ProtocolError) {
-        statusBar()->showMessage(tr("Read response error: %1 (Mobus exception: 0x%2)").
-                                    arg(reply->errorString()).
-                                    arg(reply->rawResult().exceptionCode(), -1, 16), 5000);
+        qDebug() << tr("Read response error: ") << reply->errorString()
+                 << "Modbus exception:" << reply->rawResult().exceptionCode();
     } else {
-        statusBar()->showMessage(tr("Read response error: %1 (code: 0x%2)").
-                                    arg(reply->errorString()).
-                                    arg(reply->error(), -1, 16), 5000);
+        qDebug() << tr("Read response error: ") << reply->errorString() <<
+                    "code: " << reply->error();
     }
 
     reply->deleteLater();

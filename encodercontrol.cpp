@@ -50,12 +50,12 @@ void EncoderControl::updatePosition( QString str )
     }
 
     if ( word_cnt == 0 ) {
-//        qDebug() << "position" << position_str;
+        qDebug() << "position" << position_str << "";
         emit positionChanged( position_str );
+        resetWatchDog();
+        hasConnection = true;
     }
 
-    resetWatchDog();
-    hasConnection = true;
 }
 
 void EncoderControl::saveSettings()

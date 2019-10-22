@@ -67,11 +67,11 @@ private:
     uint8_t     default_Ver;
     uint32_t    speed_limit;
     uint32_t    abs_position;
-    int         passwd[8];
 
     bool        receiveFlag;
     bool        sendFlag;
     bool        isRelayOn;
+    int         passwd[8];
 };
 
 #endif // STEPPERCONTROL_H

@@ -42,15 +42,13 @@ public:
 private:
     Ui::MainWindow *ui;
     void initializeWindow();
-    void spec_delay();
 
     void writeSettings();
     void loadSettings();
 
     int checkProtocolHeader();
     int checkConnectionStates();
-    int checkSerials();
-
+    int checkConnectionStatesMuted();
 
     int isSerialAlive();
     void setStateButtonColor(int colorCode);
@@ -106,8 +104,6 @@ signals:
     void weAreGoingToBreakSensor();
 
 public slots:
-    void testSlot();
-
     void lineSwitchClicked();
     void updateElectricParameters();
     void updateForceValue( QString str );

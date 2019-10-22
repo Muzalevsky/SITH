@@ -72,7 +72,7 @@
      </sizepolicy>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <property name="sizePolicy">
@@ -101,7 +101,7 @@
         <number>0</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_9" stretch="0,4,4,4,4,4,2,3,0">
+        <layout class="QVBoxLayout" name="verticalLayout_9" stretch="0,4,4,4,4,4,2,3">
          <property name="sizeConstraint">
           <enum>QLayout::SetDefaultConstraint</enum>
          </property>
@@ -766,18 +766,6 @@
             </spacer>
            </item>
           </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="testButton">
-           <property name="font">
-            <font>
-             <pointsize>27</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>ТЕСТ</string>
-           </property>
-          </widget>
          </item>
         </layout>
        </item>
@@ -1577,7 +1565,13 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="stepperComboBox"/>
+          <widget class="QComboBox" name="stepperComboBox">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="QPushButton" name="stepperConnectButton">
