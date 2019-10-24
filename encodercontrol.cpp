@@ -11,7 +11,7 @@ const int rev_number_per_overfloat = encoder_pulse_limit / encoder_pulse_per_rev
 
 const int screw_step_mm = 5;
 
-#define WATCHDOG_TIMEOUT 5000
+#define WATCHDOG_TIMEOUT 500
 
 EncoderControl::EncoderControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent )
 {
@@ -31,10 +31,11 @@ EncoderControl::EncoderControl( Port* ext_port, QWidget* parent ) : QMainWindow(
     connect( port, SIGNAL(outPort(QString) ), this, SLOT(updatePosition(QString) ) );
     connect( this, &EncoderControl::positionChanged, this, &EncoderControl::analyzePosition );
 
-    QTimer *watchDogTimer = new QTimer(this);
-    watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
-    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::gotTimeout);
-    connect(this, SIGNAL(resetWatchDog()), watchDogTimer, SLOT(start()));
+//    QTimer *watchDogTimer = new QTimer(this);
+//    watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
+//    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::receiveNewData);
+//    watchDogTimer->start();
+//    connect(this, SIGNAL(resetWatchDog()), watchDogTimer, SLOT(start()));
 
 }
 
@@ -50,9 +51,10 @@ void EncoderControl::updatePosition( QString str )
     }
 
     if ( word_cnt == 0 ) {
-        qDebug() << "position" << position_str << "";
-        emit positionChanged( position_str );
-        resetWatchDog();
+//        qDebug() << "position" << position_str;
+//        emit positionChanged( position_str );
+        analyzePosition(position_str);
+//        resetWatchDog();
         hasConnection = true;
     }
 
@@ -73,7 +75,8 @@ void EncoderControl::saveSettings()
 void EncoderControl::analyzePosition( QString str )
 {
     prev_position_raw = position_raw;
-    position_raw = str.toInt();
+    bool ok = false;
+    position_raw = str.toInt(&ok);
 
 //    qDebug() << "остаток: " << position_raw % encoder_pulse_per_rev;
 
@@ -87,7 +90,7 @@ void EncoderControl::analyzePosition( QString str )
         overfloat_position += 1;
     }
 
-    position_mm = /*zero_position_offset +*/ overfloat_position * rev_number_per_overfloat * screw_step_mm +
+    position_mm = overfloat_position * rev_number_per_overfloat * screw_step_mm +
             (static_cast<float>(position_raw) *
              screw_step_mm / encoder_pulse_per_rev);
 
@@ -100,8 +103,9 @@ void EncoderControl::analyzePosition( QString str )
                  << "overfloat_position:" << overfloat_position
                  << "position_mm:" << position_mm;
     }
-
-    emit updateUpperLevelPosition();
+    if (ok) {
+        emit updateUpperLevelPosition();
+    }
 }
 
 void EncoderControl::setZeroPosition()
@@ -114,12 +118,20 @@ bool EncoderControl::isAlive()
     return hasConnection;
 }
 
-void EncoderControl::gotTimeout()
-{
-    if ( port->isOpened() ) {
-        qDebug() << "watchDog encoder";
-        hasConnection = false;
-        emit lostConnection();
-    }
-}
+//void EncoderControl::gotTimeout()
+//{
+//    if ( port->isOpened() ) {
+//        qDebug() << "watchDog encoder";
+//        hasConnection = false;
+//        emit lostConnection();
+//    }
+//}
 
+//void EncoderControl::receiveNewData()
+//{
+//    if (port->isOpened()) {
+//        port->closePort();
+//        return;
+//    }
+//    port->openPort();
+//}

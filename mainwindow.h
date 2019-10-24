@@ -53,6 +53,9 @@ private:
     int isSerialAlive();
     void setStateButtonColor(int colorCode);
 
+//    void updatePositionFromEncoder();
+//    void updateForceFromTensoHead();
+
     void closeEvent(QCloseEvent *event);
 
     QWidget             *mainwidget;
@@ -100,13 +103,16 @@ signals:
     void resetStepperSupply();
     void reconnectForceWindow();
     void reconnectEncoder();
+    void reconnectModbus();
+    void sendModbusRequest();
     void goingToClose();
     void weAreGoingToBreakSensor();
+    void tooMuchForce();
 
 public slots:
     void lineSwitchClicked();
     void updateElectricParameters();
-    void updateForceValue( QString str );
+    void updateForceValue( float forceValue );
     void updateManualStep( double );
     void updatePosition();
     void updateStopFlag( bool );

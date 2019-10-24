@@ -39,13 +39,15 @@ void StepperControl::disableElectricity()
 {
     qDebug() << "GOT disableElectricity";
 
-    relayOff();
     resetMotorSupply();
+    relayOff();
 }
 
 void StepperControl::resetMotorSupply()
 {
     qDebug() << "Sending soft stop";
+//    emit isMotorDisabledTrue(true);
+
     sendCommandPowerStep(CMD_PowerSTEP01_SOFT_HI_Z, 0);
 }
 
@@ -128,8 +130,8 @@ void StepperControl::getResponse( QByteArray arr )
     if ( cmd.CMD_TYPE == CODE_CMD_POWERSTEP01 ) {
         if ( cmd.DATA.ERROR_OR_COMMAND == COMMAND_GET_ABS_POS ) {
             abs_position = cmd.DATA.RETURN_DATA;
-            emit updatePos( QString::number( abs_position ) );
-            qDebug() << "position" << abs_position;
+//            emit updatePos( QString::number( abs_position ) );
+//            qDebug() << "position" << abs_position;
         } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MAX_SPEED ) {
             qDebug() << "set max speed" << cmd.DATA.RETURN_DATA;
         } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MIN_SPEED ) {
@@ -166,7 +168,7 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
 
     emit addCmdToQueue( arr );
     emit writeCmdToPort( arr );
-    qDebug() << "sendCommandPowerStep" << arr.toHex();
+//    qDebug() << "sendCommandPowerStep" << arr.toHex();
 
 }
 
@@ -236,7 +238,7 @@ QByteArray StepperControl::serialize( request_message_t &cmd )
 in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 {
     in_message_t cmd;
-    qDebug() << "Stepper IN <<<" << byteArray.toHex();
+//    qDebug() << "Stepper IN <<<" << byteArray.toHex();
 
     QByteArray localArray = byteArray;
     if( localArray.size() < 13 )
@@ -338,6 +340,7 @@ void StepperControl::lineSwitchClicked()
 {
     if ( isRelayOn ) {
 //        qDebug() << "relay OFF";
+        resetMotorSupply();
         relayOff();
     } else {
 //        qDebug() << "relay ON";

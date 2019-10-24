@@ -4,10 +4,11 @@
 #include <QDebug>
 
 // Force terminal message settings
-const QString end_str = ")";
+const QString end_str = "(";
 const QString start_str = "=";
 
 #define WATCHDOG_TIMEOUT 5000
+#define FORCE_TERMINAL_WORD_SIZE 7
 
 ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
     hasConnection(false)
@@ -41,18 +42,20 @@ void ForceWindow::saveSettings()
 void ForceWindow::updateForce( QString str )
 {
     if ( str == start_str ) {
-//        qDebug() << "force_str :" << force_str;
-        emit setForceValue( force_str );
         force_str.clear();
-    }
-    if ( str == end_str ) {
-        force_str.append( str );
-    } else if ( str != end_str && str != start_str ) {
-        force_str.append( str );
+        symbols_left = FORCE_TERMINAL_WORD_SIZE;
+    } else {
+        force_str.append(str);
+        symbols_left--;
     }
 
-    resetWatchDog();
-    hasConnection = true;
+    if ( symbols_left == 0 ) {
+//        qDebug() << "force" << force_str;
+        updateForceValue(force_str);
+        emit setForceValue( force_kg );
+        resetWatchDog();
+        hasConnection = true;
+    }
 }
 
 bool ForceWindow::isAlive()
@@ -66,5 +69,14 @@ void ForceWindow::gotTimeout()
         qDebug() << "watchDog force";
         hasConnection = false;
         emit lostConnection();
+    }
+}
+
+void ForceWindow::updateForceValue( QString str )
+{
+    bool ok = false;
+    float force_tmp = str.toDouble(&ok);
+    if (ok) {
+        force_kg = force_tmp;
     }
 }

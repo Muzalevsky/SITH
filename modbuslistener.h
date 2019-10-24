@@ -24,6 +24,7 @@ public:
     QModbusDataUnit readRequest() const;
 
     bool isModbusConnected();
+    bool isModbusAlive();
 
     const QModbusDataUnit *unit;
     QStringList *strList;
@@ -45,6 +46,8 @@ public:
     QString     portName;
 private:
     bool        m_connected;
+    bool        _alive;
+
     QTimer      *timer;
     int         slaveNumber;
     void initActions();
@@ -52,7 +55,7 @@ private:
 public slots:
     void on_connectButton_clicked();
     void updateSlaveNumber( int number );
-
+    void reconnectModbus();
 private slots:
     void onStateChanged(int state);
     void on_readButton_clicked();

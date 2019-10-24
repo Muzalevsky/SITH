@@ -10,8 +10,8 @@
 #include <QTextCodec>
 #include <QThread>
 
-#define MSEC_BETWEEN_STEPS 2000
-#define STATEOBSERVER_INTERVAL_MSEC 500
+#define MSEC_BETWEEN_STEPS 2600
+#define STATEOBSERVER_INTERVAL_MSEC 900
 
 #define DEBUG_ENCODER
 
@@ -42,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QTextCodec::setCodecForLocale(codec);
 
     // Initialization
+    ui->currentPositionEdit->setText(QString::number(0.0001, 'f'));
     // TODO Think about the next problem: when starts button is checked, but manual updateStopFlag()is useless
     ui->autoStopButton->setChecked(true);
     stop_flag           = ui->autoStopButton->isChecked();
@@ -62,7 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->modeComboBox->addItem( "Полуавтомат" );
     ui->modeComboBox->addItem( "Автомат" );
     connect( ui->modeComboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( modeChanged(int) ) );
-    ui->modeComboBox->setCurrentIndex( 2 );
+    ui->modeComboBox->setCurrentIndex( 1 );
 
     // Settings saving
     connect( ui->saveSettingsButton, &QPushButton::clicked, this, &MainWindow::writeSettings );
@@ -109,9 +110,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateTime() ) );
     connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateState() ) );
 
-    motorSupplyOffTimer = new QTimer(this);
+//    motorSupplyOffTimer = new QTimer(this);
 //    connect( overForceTimer, SIGNAL( timeout() ), stepper_ui, SLOT( resetMotorSupply()) );
-    motorSupplyOffTimer->singleShot(2000, stepper_ui, SLOT( resetMotorSupply()));
+//    motorSupplyOffTimer->singleShot(2000, stepper_ui, SLOT( resetMotorSupply()));
+
+    connect(this, &MainWindow::tooMuchForce, stepper_ui, &StepperControl::resetMotorSupply);
 
 
     // Serials buttons
@@ -159,14 +162,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(thread_Encoder, SIGNAL(finished()), encoder_serial, SLOT(deleteLater()));//Удалить к чертям поток
     thread_Encoder->start();
 
-    //Modbus thread
-//    QThread *thread_Modbus = new QThread;
-////    rs485_serial->moveToThread(thread_Modbus);
+    //Modbus IS IN CURRENT thread
     connect( rs485_serial, &ModbusListener::getReply, this, &MainWindow::updateElectricParameters);
     connect( rs485_serial, &ModbusListener::getTemperature, this, &MainWindow::updateTemperature);
-
-//    connect(thread_Modbus, SIGNAL(finished()), rs485_serial, SLOT(deleteLater()));//Удалить к чертям поток
-//    thread_Modbus->start();
 
     //Stepper thread
     QThread *thread_Stepper = new QThread;
@@ -177,7 +175,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(thread_Stepper, SIGNAL(finished()), stepper_serial, SLOT(deleteLater()));//Удалить к чертям поток
     thread_Stepper->start();
 
-
     /*
      * DEBUG
      */
@@ -186,6 +183,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect( this, &MainWindow::reconnectForceWindow, force_serial, &Port::reconnectPort );
     connect( this, &MainWindow::reconnectEncoder, encoder_serial, &Port::reconnectPort );
+    connect( this, &MainWindow::reconnectModbus, rs485_serial, &ModbusListener::reconnectModbus );
+
+
+
 
     // Authorization
     bool ok;
@@ -230,18 +231,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
 /****************************/
 /*     Updates block        */
 /****************************/
-void MainWindow::updateForceValue( QString str )
+void MainWindow::updateForceValue( float forceValue )
 {
-    if ( str.contains("=") ) {
-        str.remove("=");
+    force_kg = forceValue;
+
+    if ( abs(force_kg) > static_cast<float>(ui->forceLimitBox->value()) ) {
+        emit tooMuchForce();
+        setStateButtonColor( Qt::yellow );
     }
 
-    if ( str.contains("(kg)") ) {
-        str.remove("(kg)");
-    }
-
-    ui->forceEdit->setText( str );
-    force_kg = str.toDouble();
+    ui->forceEdit->setText( QString::number(force_kg));
 }
 
 /***********************************************/
@@ -375,14 +374,18 @@ void MainWindow::updateState()
         return;
     }
 
-    if ( abs(force_kg) > ui->forceLimitBox->value() ) {
-        setStateButtonColor( Qt::yellow );
-        return;
-    }
+//    qDebug() << "Connection states OK";
 
     // Checking if all are sending something, if no - reconnect
     if ( isSerialAlive() != 0 ) {
         setStateButtonColor( Qt::blue );
+        return;
+    }
+
+//    qDebug() << "Serials ALIVE";
+
+    if ( abs(force_kg) > static_cast<float>(ui->forceLimitBox->value()) ) {
+        setStateButtonColor( Qt::yellow );
         return;
     }
 
@@ -572,9 +575,9 @@ void MainWindow::measureNextPoint()
     bool dir_flag = ui->reverseCheckBox->isChecked();
     /* Защита от перегрузки а автоматическом режиме */
     if ( abs(force_kg) > ui->forceLimitBox->value() ) {
-        setStateButtonColor( Qt::yellow );
+//        setStateButtonColor( Qt::yellow );
 //        emit weAreGoingToBreakSensor();
-        motorSupplyOffTimer->start();
+//        motorSupplyOffTimer->start();
 
         if ( dir_flag ) {
             emit doStepBackward(); // Отступить на шаг вниз
@@ -703,15 +706,23 @@ int MainWindow::checkProtocolHeader()
 */
 int MainWindow::checkConnectionStatesMuted()
 {
-    if ( !force_serial->isOpened() )
-       return -1;
+    if ( !force_serial->isOpened() ) {
+        emit reconnectForceWindow();
+        return -1;
+    }
+
+    if ( !rs485_serial->isModbusConnected() ) {
+        emit reconnectModbus();
+        return -3;
+    }
 
     if ( !stepper_serial->isOpened() )
        return -2;
 
-    if ( !rs485_serial->isModbusConnected() )
-       return -3;
-
+/*
+ * Состояние энкодера не проверяется ввиду особого
+ * порядка работы с ним
+*/
 #ifndef DEBUG_ENCODER
     if ( !encoder_serial->isOpened() )
        return -3;
@@ -755,11 +766,20 @@ int MainWindow::checkConnectionStates()
 /***********************************************/
 int MainWindow::isSerialAlive()
 {
+    emit reconnectEncoder();
+
     if ( !force_ui->isAlive() ) {
         qDebug() << "Отсутствует связь с весовым терминалом";
         emit reconnectForceWindow();
         return -1;
     }
+
+    if ( !rs485_serial->isModbusAlive() ) {
+        qDebug() << "Отсутствует связь RS485";
+        emit reconnectModbus();
+        return -1;
+    }
+
 
 #ifndef DEBUG_ENCODER
     if ( !encoder_ui->isAlive() ) {
@@ -932,6 +952,25 @@ void MainWindow::loadSettings()
     encoder_ui->m_settingsDialog->setBaud( encoder_baud );
     qDebug() << "encoder" << encoder_serial->SettingsPort.name << " /baud " << encoder_baud;
     qDebug() << "Настройки считаны";
+
+
+    force_ui->portName = ui->forceComboBox->currentText();
+    force_ui->saveSettings();
+//    force_serial->connect_clicked();
+
+    stepper_ui->portName = ui->stepperComboBox->currentText();
+    stepper_ui->saveSettings();
+//    stepper_serial->connect_clicked();
+//    stepper_ui->sendPassword();
+
+    rs485_serial->portName = ui->modbusComboBox->currentText();
+//    rs485_serial->on_connectButton_clicked();
+
+    encoder_ui->portName = ui->encoderBox->currentText();
+    encoder_ui->saveSettings();
+//    encoder_serial->connect_clicked();
+
+
 }
 
 /*********************************************/

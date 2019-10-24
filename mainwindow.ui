@@ -57,6 +57,9 @@
     </size>
    </property>
    <widget class="QTabWidget" name="tabWidget">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -1703,6 +1706,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="encoderConnectButton">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
            <property name="font">
             <font>
              <pointsize>12</pointsize>

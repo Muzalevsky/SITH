@@ -20,11 +20,12 @@ enum ModbusConnection {
 ModbusListener::ModbusListener(QWidget *parent)
     : QMainWindow(parent),
       modbusDevice(nullptr),
-      lastRequest(nullptr)
+      lastRequest(nullptr),
+      _alive(false)
 {
     slaveNumber = 0;
     timer = new QTimer();
-    timer->setInterval(500);
+    timer->setInterval(400);
     connect( timer, &QTimer::timeout, this, &ModbusListener::on_readButton_clicked );
 
     m_settingsDialog = new SettingsDialog(this);
@@ -155,6 +156,7 @@ void ModbusListener::readReady()
             uint32_t temp;
             temp = byte[0] + byte[1] + byte[2] + byte[3];
             temperature = *reinterpret_cast<float*>(&temp);
+            _alive = true;
             emit getTemperature();
         } else if ( reply->serverAddress() == electrical_sensor_address ) {
             for (uint i = 0; i < unit.valueCount(); i++)
@@ -168,13 +170,16 @@ void ModbusListener::readReady()
                     voltagePhaseB = entry.toDouble() / 10;
                 if ( i == 36)
                     voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 37){}
+                if ( i == 37){
+                }
                     //Linear voltage
                     //voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 38){}
+                if ( i == 38){
+                }
                     //Linear voltage
                     //voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 39){}
+                if ( i == 39){
+                }
                     //Linear voltage
                     //voltagePhaseC = entry.toDouble() / 10;
 
@@ -199,12 +204,15 @@ void ModbusListener::readReady()
 
 
             }
+            _alive = true;
             emit getReply();
         }
     } else if (reply->error() == QModbusDevice::ProtocolError) {
+        _alive = false;
         qDebug() << tr("Read response error: ") << reply->errorString()
                  << "Modbus exception:" << reply->rawResult().exceptionCode();
     } else {
+        _alive = false;
         qDebug() << tr("Read response error: ") << reply->errorString() <<
                     "code: " << reply->error();
     }
@@ -233,4 +241,41 @@ void ModbusListener::updateSlaveNumber( int number )
 bool ModbusListener::isModbusConnected()
 {
     return (m_connected != QModbusDevice::UnconnectedState);
+}
+
+bool ModbusListener::isModbusAlive()
+{
+    return _alive;
+}
+
+void ModbusListener::reconnectModbus()
+{
+    if (!modbusDevice)
+        return;
+
+    modbusDevice->disconnectDevice();
+
+    {
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
+            portName );
+
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,
+            m_settingsDialog->settings().parity);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
+            m_settingsDialog->settings().baud);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
+            m_settingsDialog->settings().dataBits);
+        modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
+            m_settingsDialog->settings().stopBits);
+
+        modbusDevice->setTimeout(m_settingsDialog->settings().responseTime);
+        modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
+
+        if (!modbusDevice->connectDevice()) {
+            qDebug() << tr("Connect failed: ") << modbusDevice->errorString();
+        } else {
+            timer->start();
+        }
+    }
+
 }

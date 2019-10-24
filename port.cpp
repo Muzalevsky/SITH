@@ -27,6 +27,9 @@ void Port::process_Port()
 
     connect(&thisPort, &QSerialPort::errorOccurred, this, &Port::handleError);
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
+
+//    connect(&thisPort, SIGNAL(readyRead()),this,SLOT(readyReadSlot()));
+
     connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
 
@@ -108,6 +111,11 @@ void Port::ReadInPort()
 //    while (!thisPort.atEnd()) {
 //        QByteArray data = thisPort.readAll();
 //        qDebug() << "data in Port" << data;
+//        emit outPort(data);
+//        emit outPortByteArray(data);
+
+////        emit outReadAll(data);
+
 //    }
 //}
 

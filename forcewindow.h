@@ -16,12 +16,17 @@ class ForceWindow : public QMainWindow
 public:
     explicit ForceWindow( Port* port, QWidget* parent );
     QString         force_str;
+    float           force_kg;
+    int             symbols_left;
+
     SettingsDialog  *m_settingsDialog;
     Port            *port;
     QString         portName;
     void            updateForce( QString);
 
     bool            isAlive();
+    void            updateForceValue( QString str );
+
 private:
     bool hasConnection;
 
@@ -35,8 +40,8 @@ signals:
     void resetWatchDog();
     void lostConnection();
 
-    void setForceValue( QString );
-
+//    void setForceValue( QString );
+    void setForceValue( float force_kg );
 };
 
 #endif // FORCEWINDOW_H

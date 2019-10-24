@@ -38,11 +38,9 @@ public slots:
     void updatePosition(QString);
     void analyzePosition(QString);
     void setZeroPosition();
-private slots:
-    void gotTimeout();
+//    void receiveNewData();
+
 signals:
-    void resetWatchDog();
-    void lostConnection();
     void updateUpperLevelPosition();
     void positionChanged(QString);
 

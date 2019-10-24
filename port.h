@@ -32,6 +32,9 @@ signals:
     void finished_Port();
     void error_(QString err);
     void outPort(QString data);
+
+    void outReadAll(QString data);
+
     void outPortByteArray(QByteArray data);
     void connectionStateChanged(bool isConnected);
 
