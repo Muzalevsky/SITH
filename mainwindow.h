@@ -64,9 +64,9 @@ private:
     QFile               *protocolFile;
     QFile               *protocolCsvFile;
 
-    Port                *force_serial;
+//    Port                *force_serial;
     Port                *stepper_serial;
-    Port                *encoder_serial;
+//    Port                *encoder_serial;
 
     ModbusListener      *rs485_serial;
     EncoderControl      *encoder_ui;
@@ -97,6 +97,7 @@ private:
     int                 stepDoneNumber;
     bool                stop_flag;
     bool                isBusy;
+    bool                firstConnection;
 signals:
     void doStepForward();
     void doStepBackward();
@@ -104,6 +105,7 @@ signals:
     void reconnectForceWindow();
     void reconnectEncoder();
     void reconnectModbus();
+    void reconnectStepper();
     void sendModbusRequest();
     void goingToClose();
     void weAreGoingToBreakSensor();
@@ -142,6 +144,8 @@ public slots:
 
     void measureNextPoint();
 
+private slots:
+    void connectToAllDevices();
 };
 
 #endif // MAINWINDOW_H

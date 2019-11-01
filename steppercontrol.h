@@ -1,45 +1,42 @@
 #ifndef STEPPERCONTROL_H
 #define STEPPERCONTROL_H
 
-#include <QMainWindow>
-//#include <QGridLayout>
-//#include <QComboBox>
-//#include <QLabel>
-//#include <QPushButton>
-//#include <QLineEdit>
 #include <QObject>
 #include <QDataStream>
-//#include <QMutex>
 
 #include <port.h>
 #include <smsd_header.h>
 #include <settingsdialog.h>
 #include <cstdint>
 
-class StepperControl : public QMainWindow
+class StepperControl : public QObject
 {
     Q_OBJECT
 public:
-    explicit StepperControl( Port* ext_port, QWidget* parent );
+    explicit StepperControl( QObject* parent = nullptr );
     ~StepperControl();
 
-    uint8_t         xor_sum(uint8_t *data,uint16_t length);
+    bool            isAuthorized();
     void            sendPassword();
-    int             step_per_mm;
-    QByteArray      serialize( out_message_t &cmd );
-    QByteArray      serialize( request_message_t &cmd );
-    in_message_t    deserialize(const QByteArray& byteArray);
-    void            sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data );
+
     uint32_t        step_number;
     SettingsDialog  *m_settingsDialog;
     Port            *port;
     QString         portName;
+    int             step_per_mm;
+
+private:
+    uint8_t         xor_sum(uint8_t *data,uint16_t length);
+    QByteArray      serialize( out_message_t &cmd );
+    QByteArray      serialize( request_message_t &cmd );
+    in_message_t    deserialize(const QByteArray& byteArray);
+    void            sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data );
 signals:
     void writeCmdToPort(QByteArray arr);
     void updatePos(QString);
     void addCmdToQueue( QByteArray arr );
     void isLineSwitchOn(bool);
-
+    void disableAll();
 public slots:
     void saveSettings();
     void getResponse( QByteArray );
@@ -51,15 +48,14 @@ public slots:
     void updateStepNumber(double );
     void stepForward();
     void stepBackward();
-//    void slotSend();
     void slotGetPos();
     void slotSetSpeed();
     void resetMotorSupply();
     void lineSwitchClicked();
-
+    void reconnectStepper();
+//    void recreatePort();
     void relayOn();
     void relayOff();
-
 private:
     QTimer      *timer;
     QVector <QByteArray>    command_buf;
@@ -68,6 +64,7 @@ private:
     uint32_t    speed_limit;
     uint32_t    abs_position;
 
+    bool        _isAuthorized;
     bool        receiveFlag;
     bool        sendFlag;
     bool        isRelayOn;

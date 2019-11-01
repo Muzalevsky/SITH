@@ -11,26 +11,33 @@
 // Tuning constant depends on mechanic
 //int step_per_mm = 164;
 
-StepperControl::StepperControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
+StepperControl::StepperControl(QObject *parent ) : QObject( parent ),
     step_per_mm(164),
     step_number(82),
     passwd_length(8),
     default_Ver(0x02),
     speed_limit(1000),
     abs_position(0),
+    _isAuthorized(false),
     isRelayOn(false),
     passwd({ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF } )
 {
-    port = ext_port;
-    m_settingsDialog = new SettingsDialog(this);
+    port = new Port();
+    port->setPortOpenMode(QIODevice::ReadWrite);
+    m_settingsDialog = new SettingsDialog();
 
     connect(port, SIGNAL(outPortByteArray(QByteArray)), this, SLOT(getResponse(QByteArray)));
     connect(this, &StepperControl::writeCmdToPort, port, &Port::WriteToPort);
+    connect(this, &StepperControl::disableAll, this, &StepperControl::disableElectricity);
+
 }
 
 StepperControl::~StepperControl()
 {
-    disableElectricity();
+    emit disableAll();
+//    thread()->wait(500);
+
+//    disableElectricity();
     //Here we stop talking with stepper driver
 //    port->closePort();
 }
@@ -117,6 +124,7 @@ void StepperControl::getResponse( QByteArray arr )
     if ( cmd.CMD_TYPE == CODE_CMD_RESPONSE ) {
         if (cmd.DATA.ERROR_OR_COMMAND == ErrorList::OK_ACCESS ) {
             qDebug() << "Успешная авторизация (USB)";
+            _isAuthorized = true;
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR ) {
             qDebug() << "Ошибка контрольной суммы" << cmd.DATA.ERROR_OR_COMMAND;
         } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET ) {
@@ -287,20 +295,15 @@ in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 
 void StepperControl::stepForward()
 {
-    qDebug() << "step+";
+    qDebug() << "step-";
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_F, step_number );
 }
 
 void StepperControl::stepBackward()
 {
-    qDebug() << "step-";
+    qDebug() << "step+";
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_R, step_number );
 }
-
-//void StepperControl::slotSend()
-//{
-//    sendPassword();
-//}
 
 void StepperControl::slotGetPos()
 {
@@ -346,4 +349,17 @@ void StepperControl::lineSwitchClicked()
 //        qDebug() << "relay ON";
         relayOn();
     }
+}
+
+void StepperControl::reconnectStepper()
+{
+    port->closePort();
+    _isAuthorized = false;
+    port->openPort();
+    sendPassword();
+}
+
+bool StepperControl::isAuthorized()
+{
+    return _isAuthorized;
 }

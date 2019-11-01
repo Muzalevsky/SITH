@@ -25,7 +25,7 @@ ModbusListener::ModbusListener(QWidget *parent)
 {
     slaveNumber = 0;
     timer = new QTimer();
-    timer->setInterval(400);
+    timer->setInterval(270);
     connect( timer, &QTimer::timeout, this, &ModbusListener::on_readButton_clicked );
 
     m_settingsDialog = new SettingsDialog(this);
@@ -215,6 +215,7 @@ void ModbusListener::readReady()
         _alive = false;
         qDebug() << tr("Read response error: ") << reply->errorString() <<
                     "code: " << reply->error();
+        reconnectModbus();
     }
 
     reply->deleteLater();

@@ -8,6 +8,7 @@ Port::Port(QObject *parent) :
     QObject(parent),
     portMode(0)
 {
+    mutex = new QMutex;
 }
 
 Port::~Port()
@@ -27,9 +28,6 @@ void Port::process_Port()
 
     connect(&thisPort, &QSerialPort::errorOccurred, this, &Port::handleError);
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
-
-//    connect(&thisPort, SIGNAL(readyRead()),this,SLOT(readyReadSlot()));
-
     connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
 
@@ -51,6 +49,8 @@ void Port::setPortOpenMode(QIODevice::OpenModeFlag flag)
 
 void Port::openPort()
 {
+//    mutex->lock();
+
     thisPort.setPortName(SettingsPort.name);
     qDebug() << "Opening " << thisPort.portName();
     if (thisPort.open(QIODevice::ReadWrite)) {
@@ -60,8 +60,8 @@ void Port::openPort()
              thisPort.setStopBits(SettingsPort.stopBits) &&
              thisPort.setFlowControl(SettingsPort.flowControl) ) {
             if ( thisPort.isOpen() ) {
-//                error_(SettingsPort.name + " >> Открыт!");
-                qDebug() << thisPort.portName() << " serial port opened";
+                error_(SettingsPort.name + " >> Открыт!");
+//                thisPort.clear();
                 emit connectionStateChanged(true);
             }
         } else {
@@ -72,23 +72,30 @@ void Port::openPort()
         thisPort.close();
         error_(thisPort.errorString());
     }
+//    mutex->unlock();
+
 }
 
+// TODO Check how it is working during deleting now
 void Port::handleError(QSerialPort::SerialPortError error)
 {
-    if ( (thisPort.isOpen()) && (error == QSerialPort::ResourceError) ) {
+    if ( (thisPort.isOpen()) /*&& (error == QSerialPort::ResourceError)*/ ) {
         error_(thisPort.errorString());
-        closePort();
+        reconnectPort();
     }
 }
 
 void Port::closePort()
 {
+//    mutex->lock();
+
     if ( thisPort.isOpen() ) {
         thisPort.close();
         error_(SettingsPort.name + " >> Закрыт!\r");
         emit connectionStateChanged(false);
     }
+//    mutex->unlock();
+
 }
 
 void Port::WriteToPort(QByteArray data)
@@ -100,24 +107,12 @@ void Port::WriteToPort(QByteArray data)
 
 void Port::ReadInPort()
 {
+//    thisPort.waitForReadyRead(50);
     QByteArray data;
     data.append(thisPort.readAll());
     emit outPortByteArray(data);
     emit outPort(data);
 }
-
-//void Port::readyReadSlot()
-//{
-//    while (!thisPort.atEnd()) {
-//        QByteArray data = thisPort.readAll();
-//        qDebug() << "data in Port" << data;
-//        emit outPort(data);
-//        emit outPortByteArray(data);
-
-////        emit outReadAll(data);
-
-//    }
-//}
 
 void Port::errorHandler( QString err )
 {
@@ -128,6 +123,7 @@ void Port::connect_clicked()
 {
 //    if (thisPort != nullptr )
 //        return;
+
 
     if ( thisPort.isOpen() ) {
         closePort();

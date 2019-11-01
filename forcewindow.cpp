@@ -7,16 +7,16 @@
 const QString end_str = "(";
 const QString start_str = "=";
 
-#define WATCHDOG_TIMEOUT 5000
+#define WATCHDOG_TIMEOUT 1300
 #define FORCE_TERMINAL_WORD_SIZE 7
 
-ForceWindow::ForceWindow( Port* ext_port, QWidget* parent ) : QMainWindow( parent ),
-    hasConnection(false)
+ForceWindow::ForceWindow(QObject *parent ) : QObject( parent ),
+    isPortAlive(false)
 {
-    port = ext_port;
-    m_settingsDialog = new SettingsDialog(this);
+    port = new Port();
+    m_settingsDialog = new SettingsDialog();
     connect( port, &Port::outPort, this, &ForceWindow::updateForce );
-
+    connect( this, &ForceWindow::lostConnection, port, &Port::reconnectPort );
 
     QTimer *watchDogTimer = new QTimer(this);
     watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
@@ -41,6 +41,8 @@ void ForceWindow::saveSettings()
 // appropriate and correct and working way to handle messages
 void ForceWindow::updateForce( QString str )
 {
+//    qDebug() << "force" << str;
+
     if ( str == start_str ) {
         force_str.clear();
         symbols_left = FORCE_TERMINAL_WORD_SIZE;
@@ -50,26 +52,25 @@ void ForceWindow::updateForce( QString str )
     }
 
     if ( symbols_left == 0 ) {
-//        qDebug() << "force" << force_str;
         updateForceValue(force_str);
+//        qDebug() << "force" << force_kg;
+
         emit setForceValue( force_kg );
         resetWatchDog();
-        hasConnection = true;
+        isPortAlive = true;
     }
 }
 
 bool ForceWindow::isAlive()
 {
-    return hasConnection;
+    return isPortAlive;
 }
 
 void ForceWindow::gotTimeout()
 {
-    if ( port->isOpened() ) {
-        qDebug() << "watchDog force";
-        hasConnection = false;
-        emit lostConnection();
-    }
+    qDebug() << "watchDog force";
+    isPortAlive = false;
+    emit lostConnection();
 }
 
 void ForceWindow::updateForceValue( QString str )

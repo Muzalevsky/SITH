@@ -11,12 +11,13 @@ const int rev_number_per_overfloat = encoder_pulse_limit / encoder_pulse_per_rev
 
 const int screw_step_mm = 5;
 
-#define WATCHDOG_TIMEOUT 500
+#define WATCHDOG_TIMEOUT 1000
 
-EncoderControl::EncoderControl( Port* ext_port, QWidget* parent ) : QMainWindow( parent )
+EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
 {
-    port = ext_port;
-    m_settingsDialog = new SettingsDialog(this);
+    port = new Port();
+    port->setPortOpenMode(QIODevice::ReadOnly);
+    m_settingsDialog = new SettingsDialog();
     word_cnt = 0;
     zero_mark_number = 0;
     position_mm = 0;
@@ -30,12 +31,14 @@ EncoderControl::EncoderControl( Port* ext_port, QWidget* parent ) : QMainWindow(
 
     connect( port, SIGNAL(outPort(QString) ), this, SLOT(updatePosition(QString) ) );
     connect( this, &EncoderControl::positionChanged, this, &EncoderControl::analyzePosition );
+//    connect( this, &EncoderControl::lostConnection, port, &Port::reconnectPort );
+
 
 //    QTimer *watchDogTimer = new QTimer(this);
 //    watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
-//    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::receiveNewData);
-//    watchDogTimer->start();
+//    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::gotTimeout);
 //    connect(this, SIGNAL(resetWatchDog()), watchDogTimer, SLOT(start()));
+//    watchDogTimer->start();
 
 }
 
@@ -104,7 +107,10 @@ void EncoderControl::analyzePosition( QString str )
                  << "position_mm:" << position_mm;
     }
     if (ok) {
+        // DEBUG try what if we immediately close port after receive?
+//        qDebug() << "final_position_mm" << final_position_mm;
         emit updateUpperLevelPosition();
+//        port->closePort();
     }
 }
 
@@ -118,20 +124,10 @@ bool EncoderControl::isAlive()
     return hasConnection;
 }
 
-//void EncoderControl::gotTimeout()
-//{
-//    if ( port->isOpened() ) {
-//        qDebug() << "watchDog encoder";
-//        hasConnection = false;
-//        emit lostConnection();
-//    }
-//}
-
-//void EncoderControl::receiveNewData()
-//{
-//    if (port->isOpened()) {
-//        port->closePort();
-//        return;
-//    }
-//    port->openPort();
-//}
+void EncoderControl::gotTimeout()
+{
+    qDebug() << "watchDog encoder";
+    hasConnection = false;
+    emit lostConnection();
+//    port->reconnectPort();
+}

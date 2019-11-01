@@ -1,20 +1,20 @@
 #ifndef FORCEWINDOW_H
 #define FORCEWINDOW_H
 
-#include <QMainWindow>
-#include <QGridLayout>
-#include <QComboBox>
-#include <QLabel>
-#include <QPushButton>
+//#include <QMainWindow>
+//#include <QGridLayout>
+//#include <QComboBox>
+//#include <QLabel>
+//#include <QPushButton>
 
 #include <port.h>
 #include <settingsdialog.h>
 
-class ForceWindow : public QMainWindow
+class ForceWindow : public QObject
 {
     Q_OBJECT
 public:
-    explicit ForceWindow( Port* port, QWidget* parent );
+    explicit ForceWindow( QObject* parent = nullptr );
     QString         force_str;
     float           force_kg;
     int             symbols_left;
@@ -28,7 +28,7 @@ public:
     void            updateForceValue( QString str );
 
 private:
-    bool hasConnection;
+    bool isPortAlive;
 
 public slots:
     void saveSettings();

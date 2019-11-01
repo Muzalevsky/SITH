@@ -4,6 +4,7 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QTimer>
+#include <QMutex>
 struct Settings {
     QString name;
     qint32 baudRate;
@@ -28,6 +29,7 @@ public:
 
 private:
     int portMode;
+    QMutex *mutex;
 signals:
     void finished_Port();
     void error_(QString err);

@@ -1,18 +1,18 @@
 #ifndef ENCODERCONTROL_H
 #define ENCODERCONTROL_H
 
-#include <QWidget>
+//#include <QWidget>
 #include <QObject>
-#include <QMainWindow>
+//#include <QMainWindow>
 
 #include <port.h>
 #include <settingsdialog.h>
 
-class EncoderControl : public QMainWindow
+class EncoderControl : public QObject
 {
     Q_OBJECT
 public:
-    explicit EncoderControl( Port* ext_port, QWidget* parent );
+    explicit EncoderControl( QObject* parent = nullptr );
     QString         position_str;
     SettingsDialog  *m_settingsDialog;
     Port            *port;
@@ -35,15 +35,17 @@ private:
 
 public slots:
     void saveSettings();
+    void setZeroPosition();
+    void gotTimeout();
+private slots:
     void updatePosition(QString);
     void analyzePosition(QString);
-    void setZeroPosition();
-//    void receiveNewData();
 
 signals:
     void updateUpperLevelPosition();
     void positionChanged(QString);
-
+    void resetWatchDog();
+    void lostConnection();
 };
 
 #endif // ENCODERCONTROL_H

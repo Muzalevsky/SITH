@@ -1432,7 +1432,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Шаг +</string>
+                <string>Шаг -</string>
                </property>
               </widget>
              </item>
@@ -1456,7 +1456,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Шаг -</string>
+                <string>Шаг +</string>
                </property>
               </widget>
              </item>
@@ -1754,6 +1754,24 @@
            </property>
            <property name="text">
             <string>Поиск</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="connectAllDevicesButton">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Подключиться к стенду</string>
            </property>
           </widget>
          </item>
