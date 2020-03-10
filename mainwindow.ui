@@ -75,7 +75,7 @@
      </sizepolicy>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <property name="sizePolicy">
@@ -93,7 +93,7 @@
         <x>0</x>
         <y>10</y>
         <width>1351</width>
-        <height>611</height>
+        <height>641</height>
        </rect>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="0,0,0">
@@ -231,7 +231,7 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_27" stretch="2,2,2,1">
+          <layout class="QHBoxLayout" name="horizontalLayout_27" stretch="2,2,0,2,1">
            <property name="sizeConstraint">
             <enum>QLayout::SetDefaultConstraint</enum>
            </property>
@@ -274,6 +274,21 @@
              </property>
              <property name="cursorMoveStyle">
               <enum>Qt::LogicalMoveStyle</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="motorPotitionEdit">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="maxLength">
+              <number>32</number>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -1485,7 +1500,7 @@
         <x>20</x>
         <y>30</y>
         <width>871</width>
-        <height>361</height>
+        <height>362</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">

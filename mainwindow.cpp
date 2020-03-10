@@ -42,6 +42,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Initialization
     ui->currentPositionEdit->setText(QString::number(0.000001, 'f'));
+    ui->motorPotitionEdit->setText(QString::number(0.000000, 'f'));
+
     // TODO Think about the next problem: when starts button is checked, but manual updateStopFlag()is useless
     ui->autoStopButton->setChecked(true);
     stop_flag           = ui->autoStopButton->isChecked();
@@ -97,6 +99,13 @@ MainWindow::MainWindow(QWidget *parent) :
              stepper_ui, SLOT( updateStepNumber(double) ), Qt::QueuedConnection );
     connect( ui->manualStepBox, SIGNAL( valueChanged(double) ),
              stepper_ui, SLOT( updateStepNumber(double) ), Qt::QueuedConnection );
+
+
+    connect( stepper_ui, SIGNAL( updatePos(QString)),
+             ui->motorPotitionEdit, SLOT(setText(QString)), Qt::QueuedConnection );
+
+
+
     connect( encoder_ui, &EncoderControl::updateUpperLevelPosition,
              this, &MainWindow::updatePosition, Qt::QueuedConnection );
     connect( force_ui, &ForceWindow::setForceValue,

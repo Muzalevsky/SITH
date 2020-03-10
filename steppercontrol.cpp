@@ -138,8 +138,8 @@ void StepperControl::getResponse( QByteArray arr )
     if ( cmd.CMD_TYPE == CODE_CMD_POWERSTEP01 ) {
         if ( cmd.DATA.ERROR_OR_COMMAND == COMMAND_GET_ABS_POS ) {
             abs_position = cmd.DATA.RETURN_DATA;
-//            emit updatePos( QString::number( abs_position ) );
-//            qDebug() << "position" << abs_position;
+            emit updatePos( QString::number( abs_position ) );
+            qDebug() << "abs_position from motor" << abs_position;
         } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MAX_SPEED ) {
             qDebug() << "set max speed" << cmd.DATA.RETURN_DATA;
         } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MIN_SPEED ) {
