@@ -39,6 +39,7 @@ void ForceWindow::saveSettings()
 
 // TODO need to check if this is
 // appropriate and correct and working way to handle messages
+// QA: what about const QString& str ? 
 void ForceWindow::updateForce( QString str )
 {
 //    qDebug() << "force" << str;
@@ -72,7 +73,7 @@ void ForceWindow::gotTimeout()
     isPortAlive = false;
     emit lostConnection();
 }
-
+// QA: what about const QString& str ? 
 void ForceWindow::updateForceValue( QString str )
 {
     bool ok = false;

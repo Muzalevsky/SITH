@@ -18,12 +18,14 @@ public:
     Port            *port;
     QString         portName;
     uint8_t         word_cnt;
+    // QA: where do you use this variable?
     int             zero_mark_number;
     float           position_mm;
     float           final_position_mm;
     int             prev_position_raw;
     int             position_raw;
     int             delta;
+    // QA: where do you use this variable?
     int8_t          speed_dir;
     float           zero_position_offset;
     int             overfloat_position;

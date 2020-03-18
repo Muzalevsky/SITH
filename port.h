@@ -19,6 +19,7 @@ class Port : public QObject
     Q_OBJECT
 public:
     explicit Port(QObject *parent = 0);
+// QA: what does it for? 
     ~Port();
 
     QSerialPort thisPort;

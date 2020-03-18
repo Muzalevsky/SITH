@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName( ORGANIZATION_NAME );
     QCoreApplication::setOrganizationDomain( ORGANIZATION_DOMAIN );
     QCoreApplication::setApplicationName( APPLICATION_NAME );
-
+// QA: "a" is the name of object? 
     QApplication a(argc, argv);
 
     QString logDirPath = a.applicationDirPath() + "/logs";

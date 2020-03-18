@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+// QA: I read that const variable typically named with UPPERCASE letters
+
 const QString enc_end_str = "\r";
 const QString enc_start_str = "\r";
 //Mechanical parameters
@@ -18,6 +20,7 @@ EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
 {
     port = new Port();
     port->setPortOpenMode(QIODevice::ReadOnly);
+    // QA: where did you delete m_settingsDialog, not sure if you need to do it (=
     m_settingsDialog = new SettingsDialog();
     word_cnt = 0;
     zero_mark_number = 0;
@@ -33,6 +36,7 @@ EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
     connect( port, SIGNAL(outPortString(QString)), this, SLOT(updatePosition(QString) ) );
 
 #ifdef ENABLE_WATCHDOG
+    // QA: do you need to delete watchDogTimer in destructor? Or is it automatic? 
     QTimer *watchDogTimer = new QTimer(this);
     watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
     connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::gotTimeout);
@@ -41,6 +45,9 @@ EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
 #endif
 }
 
+// QA: why you don't use reference as argument, kind of QString& str
+// QA: as I understand, each time you call this method, you copy the input arg 
+// QA: in your case, as you don't change str, you may use const QString& str 
 void EncoderControl::updatePosition( QString str )
 {
     if ( str == enc_start_str ) {
@@ -59,7 +66,6 @@ void EncoderControl::updatePosition( QString str )
 #endif
         hasConnection = true;
     }
-
 }
 
 void EncoderControl::saveSettings()
@@ -74,6 +80,7 @@ void EncoderControl::saveSettings()
     qDebug() << "New position port settings saved.";
 }
 
+// QA: the same question with agrument here. Why not const QString& str? 
 void EncoderControl::analyzePosition( QString str )
 {
     prev_position_raw = position_raw;

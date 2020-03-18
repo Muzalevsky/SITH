@@ -12,7 +12,7 @@
 
 const int temperature_sensor_address = 1;
 const int electrical_sensor_address = 2;
-
+// QA: is it for future? enum consists only 1 element 
 enum ModbusConnection {
     Serial
 };
@@ -32,7 +32,6 @@ ModbusListener::ModbusListener(QWidget *parent)
     on_connectType_currentIndexChanged(0);
 
     strList = new QStringList();
-
 }
 
 ModbusListener::~ModbusListener()
@@ -96,7 +95,7 @@ void ModbusListener::on_connectButton_clicked()
         modbusDevice->disconnectDevice();
     }
 }
-
+// QA: what about  const uint16_t& state?
 void ModbusListener::onStateChanged(int state)
 {
     m_connected = (state != QModbusDevice::UnconnectedState);
@@ -113,6 +112,8 @@ void ModbusListener::on_readButton_clicked()
 
     for ( int slave_id = temperature_sensor_address; slave_id <= electrical_sensor_address; slave_id++ )
     {
+    // QA: is it okay that you create several QModbusDataUnit object? 
+    // QA: do you free memory somewhere? 
         QModbusDataUnit *unit = new QModbusDataUnit();
         if ( slave_id == temperature_sensor_address ) {
             unit->setRegisterType( QModbusDataUnit::InputRegisters );
@@ -122,7 +123,6 @@ void ModbusListener::on_readButton_clicked()
             unit->setRegisterType( QModbusDataUnit::HoldingRegisters );
             unit->setStartAddress(0);
             unit->setValueCount( 50 );
-
         }
 
         if (auto *reply = modbusDevice->sendReadRequest(*unit, slave_id ) ) {
@@ -155,6 +155,9 @@ void ModbusListener::readReady()
 
             uint32_t temp;
             temp = byte[0] + byte[1] + byte[2] + byte[3];
+// QA: are you sure about reinterpert_cast? why not dynamic cast? 
+// QA: as I understand, reinterpret_cast works on compiler level,
+// QA: and it may be dangerous 
             temperature = *reinterpret_cast<float*>(&temp);
             _alive = true;
             emit getTemperature();
@@ -163,7 +166,10 @@ void ModbusListener::readReady()
             {
                 const QString entry = tr("%1").arg(QString::number(unit.value(i), 10 ));
                 strList->append( entry );
-
+// QA: maybe you can use switch? Is it not fat to check all that if-s? 
+// QA: or you can make function, that use defined koefficient 
+// QA: also you can change division to multiplication, 
+// QA: I hear that it's lighter that division, 1 / 10 = 0.1 etc. 
                 if ( i == 34 )
                     voltagePhaseA = entry.toDouble() / 10;
                 if ( i == 35)
@@ -233,7 +239,7 @@ void ModbusListener::readReady()
 //    }
 //    return QModbusDataUnit(table, startAddress, numberOfEntries);
 //}
-
+// QA: why not const int& number? 
 void ModbusListener::updateSlaveNumber( int number )
 {
     slaveNumber = number;
@@ -255,7 +261,8 @@ void ModbusListener::reconnectModbus()
         return;
 
     modbusDevice->disconnectDevice();
-
+// QA: why do you use these brackets? 
+// QA: i couldn't find any local variables/obejcts inside 
     {
         modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
             portName );
@@ -278,5 +285,4 @@ void ModbusListener::reconnectModbus()
             timer->start();
         }
     }
-
 }

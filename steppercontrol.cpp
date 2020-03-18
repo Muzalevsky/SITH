@@ -71,8 +71,8 @@ void StepperControl::saveSettings()
     qDebug() << "Stepper port settings saved.";
 }
 
-
-uint8_t StepperControl::xor_sum(uint8_t *data,uint16_t length)
+// QA: uint16_t& length? 
+uint8_t StepperControl::xor_sum(uint8_t *data, uint16_t length)
 {
     uint8_t xor_temp = 0xFF;
     while( length-- )
@@ -123,7 +123,7 @@ void StepperControl::resetMotorPosition()
     qDebug() << "resetMotorPosition()";
 }
 
-
+// QA: cosnt QByteArray& arr? 
 void StepperControl::getResponse( QByteArray arr )
 {
     in_message_t cmd = deserialize( arr );
@@ -153,6 +153,7 @@ void StepperControl::getResponse( QByteArray arr )
         }
         else
         {
+// QA: it is okay that english and russian is mixed? 
             qDebug() << "Response error: " << cmd.DATA.ERROR_OR_COMMAND;
         }
     }
@@ -194,7 +195,7 @@ void StepperControl::getResponse( QByteArray arr )
         }
     }
 }
-
+// QA: const CMD_PowerSTEP& command, const uint32_t& data? 
 void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data )
 {
     out_message_t cmd;
@@ -214,7 +215,7 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
 //    qDebug() << "sendCommandPowerStep" << arr.toHex();
 
 }
-
+// QA: const out_message_t &cmd?
 QByteArray StepperControl::serialize( out_message_t &cmd )
 {
     QByteArray byteArray;
@@ -246,7 +247,7 @@ QByteArray StepperControl::serialize( out_message_t &cmd )
 
     return byteArray;
 }
-
+// QA: const request_message_t &cmd
 QByteArray StepperControl::serialize( request_message_t &cmd )
 {
     QByteArray byteArray;
@@ -351,7 +352,7 @@ void StepperControl::stepBackward()
 ////    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
 
 //}
-
+// QA: const double& step_mm?
 void StepperControl::updateStepNumber( double step_mm )
 {
     step_number = static_cast <uint32_t>( step_mm * step_per_mm );

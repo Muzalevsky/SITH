@@ -14,6 +14,7 @@ class StepperControl : public QObject
     Q_OBJECT
 public:
     explicit StepperControl( QObject* parent = nullptr );
+// QA: what does it for? 
     ~StepperControl();
 
     bool            isAuthorized();
@@ -27,7 +28,7 @@ public:
     int             step_per_mm;
 
 private:
-    uint8_t         xor_sum(uint8_t *data,uint16_t length);
+    uint8_t         xor_sum(uint8_t *data, uint16_t length);
     QByteArray      serialize( out_message_t &cmd );
     QByteArray      serialize( request_message_t &cmd );
     in_message_t    deserialize(const QByteArray& byteArray);

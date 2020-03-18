@@ -20,6 +20,7 @@ class ModbusListener : public QMainWindow
     Q_OBJECT
 public:
     explicit ModbusListener(QWidget *parent = nullptr);
+// QA: what does it for? 
     ~ModbusListener();
     QModbusDataUnit readRequest() const;
 

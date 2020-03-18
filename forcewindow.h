@@ -41,6 +41,7 @@ signals:
     void lostConnection();
 
 //    void setForceValue( QString );
+// QA: why not float& force_kg? Is it declared somewhere in Qt Lib? 
     void setForceValue( float force_kg );
 };
 

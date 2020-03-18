@@ -37,7 +37,7 @@ void Port::process_Port()
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
     connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
-
+// QA: const QString& name, etc? 
 void Port::setPortSettings(QString name, int baudrate,int DataBits,
                          int Parity,int StopBits, int FlowControl)
 {

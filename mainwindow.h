@@ -23,7 +23,9 @@
 
 enum WorkingModes
 {
-    MANUAL_MODE = 0,
+// QA: why you declare MANUAL_MODE, it will be the same 
+// QA: if you won't declare it, just MANUL_MODE, ...
+    MANUAL_MODE = 0, 
     SEMIAUTO_MODE,
     FULLAUTO_MODE
 };
@@ -31,11 +33,10 @@ enum WorkingModes
 namespace Ui {
 class MainWindow;
 }
-
+// QA: Why not smart pointers insted of raw pointers? 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
