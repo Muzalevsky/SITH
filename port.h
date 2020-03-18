@@ -29,20 +29,14 @@ public:
 
 private:
     int portMode;
-    QMutex *mutex;
 signals:
     void finished_Port();
     void error_(QString err);
-    void outPort(QString data);
-
-    void outReadAll(QString data);
-
+    void outPortString(QString data);
     void outPortByteArray(QByteArray data);
     void connectionStateChanged(bool isConnected);
 
 public slots:
-//    void readyReadSlot();
-
     void closePort();
     void openPort();
     void setPortSettings(QString name, int baudrate, int DataBits, int Parity, int StopBits, int FlowControl);

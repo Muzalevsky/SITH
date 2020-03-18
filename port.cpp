@@ -8,7 +8,15 @@ Port::Port(QObject *parent) :
     QObject(parent),
     portMode(0)
 {
-    mutex = new QMutex;
+    /*
+     * see https://doc-snapshots.qt.io/qt5-5.10/qserialport.html
+     *
+     * This option is useful if the data is only read at certain points in time
+     *  (for instance in a real-time streaming application) or if the serial
+     * port should be protected against receiving too much data, which
+     * may eventually cause the application to run out of memory.
+     */
+    thisPort.setReadBufferSize(1000);
 }
 
 Port::~Port()
@@ -19,10 +27,9 @@ Port::~Port()
 //Q_DECLARE_METATYPE(QSerialPort::SerialPortError);
 void Port::process_Port()
 {
-
-    qDebug() << "New serial port" << this << "in thread" << this->thread();
-    qDebug() << "Port's parent is" << parent();
-
+    qDebug() << "Serial port" << this
+             << "in thread" << this->thread()
+             << "parent" << parent();
 
     qRegisterMetaType<QSerialPort::SerialPortError>("QSerialPort::SerialPortError");
 
@@ -49,31 +56,35 @@ void Port::setPortOpenMode(QIODevice::OpenModeFlag flag)
 
 void Port::openPort()
 {
-//    mutex->lock();
-
     thisPort.setPortName(SettingsPort.name);
     qDebug() << "Opening " << thisPort.portName();
-    if (thisPort.open(QIODevice::ReadWrite)) {
+
+    if (thisPort.open(QIODevice::ReadWrite))
+    {
         if ( thisPort.setBaudRate(SettingsPort.baudRate) &&
              thisPort.setDataBits(SettingsPort.dataBits) &&
              thisPort.setParity(SettingsPort.parity) &&
              thisPort.setStopBits(SettingsPort.stopBits) &&
-             thisPort.setFlowControl(SettingsPort.flowControl) ) {
-            if ( thisPort.isOpen() ) {
+             thisPort.setFlowControl(SettingsPort.flowControl) )
+        {
+            if ( thisPort.isOpen() )
+            {
                 error_(SettingsPort.name + " >> Открыт!");
-//                thisPort.clear();
+                thisPort.clear();
                 emit connectionStateChanged(true);
             }
-        } else {
+        }
+        else
+        {
             thisPort.close();
             error_(thisPort.errorString());
         }
-    } else {
+    }
+    else
+    {
         thisPort.close();
         error_(thisPort.errorString());
     }
-//    mutex->unlock();
-
 }
 
 // TODO Check how it is working during deleting now
@@ -87,15 +98,12 @@ void Port::handleError(QSerialPort::SerialPortError error)
 
 void Port::closePort()
 {
-//    mutex->lock();
-
     if ( thisPort.isOpen() ) {
+        thisPort.clear( QSerialPort::AllDirections );
         thisPort.close();
         error_(SettingsPort.name + " >> Закрыт!\r");
         emit connectionStateChanged(false);
     }
-//    mutex->unlock();
-
 }
 
 void Port::WriteToPort(QByteArray data)
@@ -107,11 +115,13 @@ void Port::WriteToPort(QByteArray data)
 
 void Port::ReadInPort()
 {
-//    thisPort.waitForReadyRead(50);
-    QByteArray data;
-    data.append(thisPort.readAll());
-    emit outPortByteArray(data);
-    emit outPort(data);
+    if ( thisPort.isOpen() )
+    {
+        QByteArray data;
+        data.append(thisPort.readAll());
+        emit outPortByteArray(data);
+        emit outPortString(data);
+    }
 }
 
 void Port::errorHandler( QString err )
@@ -121,10 +131,6 @@ void Port::errorHandler( QString err )
 
 void Port::connect_clicked()
 {
-//    if (thisPort != nullptr )
-//        return;
-
-
     if ( thisPort.isOpen() ) {
         closePort();
     } else {
