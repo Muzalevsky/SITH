@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     logFilePath = logDirPath + "/File" + QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm") + ".txt";
     m_logFile.reset(new QFile(logFilePath));
     m_logFile.data()->open(QFile::Append | QFile::Text);
-    // Устанавливаем обработчик (перенаправление отладки)
+    // Перенаправление отладки в лог
     qInstallMessageHandler(messageHandler);
 
     MainWindow w;

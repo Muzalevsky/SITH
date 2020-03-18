@@ -12,6 +12,7 @@ const int rev_number_per_overfloat = encoder_pulse_limit / encoder_pulse_per_rev
 const int screw_step_mm = 5;
 
 #define WATCHDOG_TIMEOUT 1000
+//#define ENABLE_WATCHDOG
 
 EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
 {
@@ -29,22 +30,19 @@ EncoderControl::EncoderControl(QObject *parent ) : QObject( parent )
     zero_position_offset = 0;
     overfloat_position = 0;
 
-    connect( port, SIGNAL(outPort(QString) ), this, SLOT(updatePosition(QString) ) );
-    connect( this, &EncoderControl::positionChanged, this, &EncoderControl::analyzePosition );
-//    connect( this, &EncoderControl::lostConnection, port, &Port::reconnectPort );
+    connect( port, SIGNAL(outPortString(QString)), this, SLOT(updatePosition(QString) ) );
 
-
-//    QTimer *watchDogTimer = new QTimer(this);
-//    watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
-//    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::gotTimeout);
-//    connect(this, SIGNAL(resetWatchDog()), watchDogTimer, SLOT(start()));
-//    watchDogTimer->start();
-
+#ifdef ENABLE_WATCHDOG
+    QTimer *watchDogTimer = new QTimer(this);
+    watchDogTimer->setInterval(WATCHDOG_TIMEOUT);
+    connect(watchDogTimer, &QTimer::timeout, this, &EncoderControl::gotTimeout);
+    connect(this, SIGNAL(resetWatchDog()), watchDogTimer, SLOT(start()));
+    watchDogTimer->start();
+#endif
 }
 
 void EncoderControl::updatePosition( QString str )
 {
-//    qDebug() << "Clear position from port" << str;
     if ( str == enc_start_str ) {
         position_str.clear();
         word_cnt = 5;
@@ -55,9 +53,10 @@ void EncoderControl::updatePosition( QString str )
 
     if ( word_cnt == 0 ) {
 //        qDebug() << "position" << position_str;
-//        emit positionChanged( position_str );
         analyzePosition(position_str);
-//        resetWatchDog();
+#ifdef ENABLE_WATCHDOG
+        resetWatchDog();
+#endif
         hasConnection = true;
     }
 
@@ -78,6 +77,10 @@ void EncoderControl::saveSettings()
 void EncoderControl::analyzePosition( QString str )
 {
     prev_position_raw = position_raw;
+
+    /*
+     * Trying to convert string
+     */
     bool ok = false;
     position_raw = str.toInt(&ok);
 
@@ -99,18 +102,14 @@ void EncoderControl::analyzePosition( QString str )
 
     final_position_mm = zero_position_offset + position_mm;
 
-    if ( delta != 0 ) {
-        qDebug() << "prev:" << prev_position_raw
-                 << "current:" << position_raw
-                 << "delta: " << delta
-                 << "overfloat_position:" << overfloat_position
-                 << "position_mm:" << position_mm;
-    }
-    if (ok) {
-        // DEBUG try what if we immediately close port after receive?
-//        qDebug() << "final_position_mm" << final_position_mm;
-        emit updateUpperLevelPosition();
-//        port->closePort();
+    if ( delta != 0 && ok ) {
+//        qDebug() << "prev:" << prev_position_raw
+//                 << "current:" << position_raw
+//                 << "delta: " << delta
+//                 << "overfloat_position:" << overfloat_position
+//                 << "position_mm:" << position_mm;
+
+        emit updateUpperLevelPosition(final_position_mm);
     }
 }
 
@@ -128,6 +127,4 @@ void EncoderControl::gotTimeout()
 {
     qDebug() << "watchDog encoder";
     hasConnection = false;
-    emit lostConnection();
-//    port->reconnectPort();
 }

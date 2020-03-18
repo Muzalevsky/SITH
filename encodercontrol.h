@@ -42,10 +42,9 @@ private slots:
     void analyzePosition(QString);
 
 signals:
-    void updateUpperLevelPosition();
+    void updateUpperLevelPosition(float);
     void positionChanged(QString);
     void resetWatchDog();
-    void lostConnection();
 };
 
 #endif // ENCODERCONTROL_H

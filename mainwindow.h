@@ -81,6 +81,12 @@ private:
     uint32_t            auto_step_number;
     QString             force_str;
     float               currentPosition;
+
+    float               manualZeroPosition;
+    float               manualPosition;
+    float               manualCurrentPosition;
+
+
     double              voltagePhaseA;
     double              voltagePhaseB;
     double              voltagePhaseC;
@@ -114,9 +120,9 @@ signals:
 public slots:
     void lineSwitchClicked();
     void updateElectricParameters();
-    void updateForceValue( float forceValue );
+    void updateForceValue( float );
     void updateManualStep( double );
-    void updatePosition();
+    void updatePosition(float );
     void updateStopFlag( bool );
     void updateTemperature();
     void updateTime();
