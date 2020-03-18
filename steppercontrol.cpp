@@ -68,7 +68,7 @@ void StepperControl::saveSettings()
                            m_settingsDialog->settings().stopBits,
                            QSerialPort::NoFlowControl );
 
-    qDebug() << "New stepper port settings saved.";
+    qDebug() << "Stepper port settings saved.";
 }
 
 
@@ -80,9 +80,6 @@ uint8_t StepperControl::xor_sum(uint8_t *data,uint16_t length)
         xor_temp += *data;
         data++;
     }
-//    uint8_t result =  (uint8_t)( (xor_temp) ^ 0xFF);
-//    qDebug() << "xor_sum = " << result;
-//    return result;
 
     return (xor_temp ^ 0xFF);
 }
@@ -96,14 +93,17 @@ void StepperControl::sendPassword()
     cmd.CMD_TYPE = CODE_CMD_REQUEST;
     cmd.CMD_IDENTIFICATION = 0xEE;
     cmd.LENGTH_DATA = 0x08;
+
     for ( int cnt = 0; cnt < passwd_length; cnt++ )
     {
         cmd.DATA_ARR[cnt] = passwd[cnt];
     }
+
     cmd.XOR_SUM = xor_sum((uint8_t*)&cmd.XOR_SUM, sizeof(cmd));
 
     QByteArray arr = serialize( cmd );
     emit writeCmdToPort( arr );
+
     qDebug() << "sendPassword" << arr;
 }
 
@@ -112,8 +112,15 @@ void StepperControl::initialize()
     //    sendCommandPowerStep( CMD_PowerSTEP01_RESET_POS, 0 );
     //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
     //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
-    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
+    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit / 2 );
 
+}
+
+
+void StepperControl::resetMotorPosition()
+{
+    sendCommandPowerStep( CMD_PowerSTEP01_RESET_POS, 0 );
+    qDebug() << "resetMotorPosition()";
 }
 
 
@@ -121,42 +128,70 @@ void StepperControl::getResponse( QByteArray arr )
 {
     in_message_t cmd = deserialize( arr );
 
-    if ( cmd.CMD_TYPE == CODE_CMD_RESPONSE ) {
-        if (cmd.DATA.ERROR_OR_COMMAND == ErrorList::OK_ACCESS ) {
+    if ( cmd.CMD_TYPE == CODE_CMD_RESPONSE )
+    {
+        if (cmd.DATA.ERROR_OR_COMMAND == ErrorList::OK_ACCESS )
+        {
             qDebug() << "Успешная авторизация (USB)";
             _isAuthorized = true;
-        } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR ) {
+        }
+        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR )
+        {
             qDebug() << "Ошибка контрольной суммы" << cmd.DATA.ERROR_OR_COMMAND;
-        } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET ) {
+        }
+        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET )
+        {
             qDebug() << "Реле ВКЛ" << cmd.DATA.ERROR_OR_COMMAND;
-        } else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_CLR ) {
+            isRelayOn = true;
+            emit isLineSwitchOn( isRelayOn );
+        }
+        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_CLR )
+        {
             qDebug() << "Реле ВЫКЛ" << cmd.DATA.ERROR_OR_COMMAND;
-        } else {
+            isRelayOn = false;
+            emit isLineSwitchOn( isRelayOn );
+        }
+        else
+        {
             qDebug() << "Response error: " << cmd.DATA.ERROR_OR_COMMAND;
         }
     }
-    if ( cmd.CMD_TYPE == CODE_CMD_POWERSTEP01 ) {
-        if ( cmd.DATA.ERROR_OR_COMMAND == COMMAND_GET_ABS_POS ) {
+    if ( cmd.CMD_TYPE == CODE_CMD_POWERSTEP01 )
+    {
+        if ( cmd.DATA.ERROR_OR_COMMAND == COMMAND_GET_ABS_POS )
+        {
             abs_position = cmd.DATA.RETURN_DATA;
             emit updatePos( QString::number( abs_position ) );
             qDebug() << "abs_position from motor" << abs_position;
-        } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MAX_SPEED ) {
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MAX_SPEED )
+        {
             qDebug() << "set max speed" << cmd.DATA.RETURN_DATA;
-        } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MIN_SPEED ) {
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_MIN_SPEED )
+        {
             qDebug() << "set min speed" << cmd.DATA.RETURN_DATA;
-        } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_RESET_POS ) {
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_RESET_POS )
+        {
             qDebug() << "reset position" << cmd.DATA.RETURN_DATA;
-        } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_MOVE_F ) {
+            sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_MOVE_F )
+        {
             qDebug() << "Move F Status: " << cmd.DATA.ERROR_OR_COMMAND;
             sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
-        } else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_MOVE_R ) {
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_MOVE_R )
+        {
             qDebug() << "Move R Status: " << cmd.DATA.ERROR_OR_COMMAND;
             sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
-        } else {
+        }
+        else
+        {
             qDebug() << "POWERSTEP01 ERROR_OR_COMMAND: " << cmd.DATA.ERROR_OR_COMMAND;
 
         }
-
     }
 }
 
@@ -174,8 +209,8 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
     cmd.XOR_SUM = xor_sum((uint8_t*)&cmd.XOR_SUM, sizeof(cmd));
     QByteArray arr = serialize( cmd );
 
-    emit addCmdToQueue( arr );
     emit writeCmdToPort( arr );
+
 //    qDebug() << "sendCommandPowerStep" << arr.toHex();
 
 }
@@ -295,28 +330,27 @@ in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 
 void StepperControl::stepForward()
 {
-    qDebug() << "step-";
+    qDebug() << "step-" << step_number;
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_F, step_number );
 }
 
 void StepperControl::stepBackward()
 {
-    qDebug() << "step+";
+    qDebug() << "step+" << step_number;
     sendCommandPowerStep( CMD_PowerSTEP01_MOVE_R, step_number );
 }
 
-void StepperControl::slotGetPos()
-{
-    sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
+//void StepperControl::slotGetPos()
+//{
+//    sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
+//}
 
-}
+//void StepperControl::slotSetSpeed()
+//{
+//    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
+////    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
 
-void StepperControl::slotSetSpeed()
-{
-    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
-//    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
-
-}
+//}
 
 void StepperControl::updateStepNumber( double step_mm )
 {
@@ -327,26 +361,23 @@ void StepperControl::relayOn()
 {
     qDebug() << "Sending relay ON";
     sendCommandPowerStep( CMD_PowerSTEP01_SET_RELE, 0 );
-    isRelayOn = true;
-    emit isLineSwitchOn( isRelayOn );
 }
 
 void StepperControl::relayOff()
 {
     qDebug() << "Sending relay OFF";
     sendCommandPowerStep( CMD_PowerSTEP01_CLR_RELE, 0 );
-    isRelayOn = false;
-    emit isLineSwitchOn( isRelayOn );
 }
 
 void StepperControl::lineSwitchClicked()
 {
     if ( isRelayOn ) {
-//        qDebug() << "relay OFF";
         resetMotorSupply();
+
+        // Solenoid supply OFF
         relayOff();
     } else {
-//        qDebug() << "relay ON";
+        // Solenoid supply ON
         relayOn();
     }
 }
@@ -357,7 +388,20 @@ void StepperControl::reconnectStepper()
     _isAuthorized = false;
     port->openPort();
     sendPassword();
+    getRelayState();
 }
+
+/*
+ * May be BUG in the SMSD block but
+ * it makes strange response
+ */
+void StepperControl::getRelayState()
+{
+    sendCommandPowerStep( CMD_PowerSTEP01_GET_RELE, 0 );
+    qDebug() << "getRelayState";
+}
+
+
 
 bool StepperControl::isAuthorized()
 {

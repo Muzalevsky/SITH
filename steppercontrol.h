@@ -18,6 +18,7 @@ public:
 
     bool            isAuthorized();
     void            sendPassword();
+    void            getRelayState();
 
     uint32_t        step_number;
     SettingsDialog  *m_settingsDialog;
@@ -34,7 +35,6 @@ private:
 signals:
     void writeCmdToPort(QByteArray arr);
     void updatePos(QString);
-    void addCmdToQueue( QByteArray arr );
     void isLineSwitchOn(bool);
     void disableAll();
 public slots:
@@ -44,18 +44,20 @@ public slots:
 
     void disableElectricity();
 
-//    void updateSpeedLimit(QString str);
+    void resetMotorPosition();
+
     void updateStepNumber(double );
     void stepForward();
     void stepBackward();
-    void slotGetPos();
-    void slotSetSpeed();
+//    void slotGetPos();
+//    void slotSetSpeed();
     void resetMotorSupply();
     void lineSwitchClicked();
     void reconnectStepper();
 //    void recreatePort();
     void relayOn();
     void relayOff();
+
 private:
     QTimer      *timer;
     QVector <QByteArray>    command_buf;
