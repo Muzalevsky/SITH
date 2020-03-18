@@ -15,7 +15,7 @@ ForceWindow::ForceWindow(QObject *parent ) : QObject( parent ),
 {
     port = new Port();
     m_settingsDialog = new SettingsDialog();
-    connect( port, &Port::outPort, this, &ForceWindow::updateForce );
+    connect( port, &Port::outPortString, this, &ForceWindow::updateForce );
     connect( this, &ForceWindow::lostConnection, port, &Port::reconnectPort );
 
     QTimer *watchDogTimer = new QTimer(this);

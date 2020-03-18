@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1390</width>
-    <height>690</height>
+    <height>704</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -65,7 +65,7 @@
       <x>10</x>
       <y>10</y>
       <width>1361</width>
-      <height>651</height>
+      <height>681</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -93,7 +93,7 @@
         <x>0</x>
         <y>10</y>
         <width>1351</width>
-        <height>641</height>
+        <height>621</height>
        </rect>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="0,0,0">
@@ -278,7 +278,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="motorPotitionEdit">
+            <widget class="QLineEdit" name="motorPositionEdit">
              <property name="font">
               <font>
                <pointsize>12</pointsize>
