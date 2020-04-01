@@ -21,6 +21,7 @@ public:
     int             zero_mark_number;
     float           position_mm;
     float           final_position_mm;
+    float           prev_final_position_mm;
     int             prev_position_raw;
     int             position_raw;
     int             delta;
