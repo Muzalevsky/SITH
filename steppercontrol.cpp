@@ -12,11 +12,11 @@
 //int step_per_mm = 164;
 
 StepperControl::StepperControl(QObject *parent ) : QObject( parent ),
-    step_per_mm(164),
     step_number(82),
+    step_per_mm(164),
     passwd_length(8),
     default_Ver(0x02),
-    speed_limit(1000),
+    speed_limit(250),
     abs_position(0),
     _isAuthorized(false),
     isRelayOn(false),
@@ -53,8 +53,6 @@ void StepperControl::disableElectricity()
 void StepperControl::resetMotorSupply()
 {
     qDebug() << "Sending soft stop";
-//    emit isMotorDisabledTrue(true);
-
     sendCommandPowerStep(CMD_PowerSTEP01_SOFT_HI_Z, 0);
 }
 
@@ -112,7 +110,7 @@ void StepperControl::initialize()
     //    sendCommandPowerStep( CMD_PowerSTEP01_RESET_POS, 0 );
     //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
     //    sendCommandPowerStep( CMD_PowerSTEP01_SET_MIN_SPEED, speed_limit / 2 );
-    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit / 2 );
+    sendCommandPowerStep( CMD_PowerSTEP01_SET_MAX_SPEED, speed_limit );
 
 }
 
@@ -130,30 +128,37 @@ void StepperControl::getResponse( QByteArray arr )
 
     if ( cmd.CMD_TYPE == CODE_CMD_RESPONSE )
     {
-        if (cmd.DATA.ERROR_OR_COMMAND == ErrorList::OK_ACCESS )
+        uint8_t answer = cmd.DATA.ERROR_OR_COMMAND;
+        switch (answer)
         {
-            qDebug() << "Успешная авторизация (USB)";
-            _isAuthorized = true;
-        }
-        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::ERROR_XOR )
-        {
-            qDebug() << "Ошибка контрольной суммы" << cmd.DATA.ERROR_OR_COMMAND;
-        }
-        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_SET )
-        {
-            qDebug() << "Реле ВКЛ" << cmd.DATA.ERROR_OR_COMMAND;
-            isRelayOn = true;
-            emit isLineSwitchOn( isRelayOn );
-        }
-        else if ( cmd.DATA.ERROR_OR_COMMAND == ErrorList::STATUS_RELE_CLR )
-        {
-            qDebug() << "Реле ВЫКЛ" << cmd.DATA.ERROR_OR_COMMAND;
-            isRelayOn = false;
-            emit isLineSwitchOn( isRelayOn );
-        }
-        else
-        {
-            qDebug() << "Response error: " << cmd.DATA.ERROR_OR_COMMAND;
+            case ErrorList::OK_ACCESS:
+                qDebug() << "Успешная авторизация (USB)";
+                _isAuthorized = true;
+                break;
+
+            case ErrorList::ERROR_ACCESS:
+                qDebug() << "Ошибка авторизации" << answer;
+                _isAuthorized = true;
+                break;
+            case ErrorList::ERROR_XOR:
+                qDebug() << "Ошибка контрольной суммы" << answer;
+                break;
+
+            case ErrorList::STATUS_RELE_SET:
+                qDebug() << "Статус: Реле ВКЛ" << answer;
+                isRelayOn = true;
+                emit isLineSwitchOn( isRelayOn );
+                break;
+
+            case ErrorList::STATUS_RELE_CLR:
+                qDebug() << "Статус: Реле ВЫКЛ" << answer;
+                isRelayOn = false;
+                emit isLineSwitchOn( isRelayOn );
+                break;
+
+            default:
+                qDebug() << "Response error: " << answer;
+                break;
         }
     }
     if ( cmd.CMD_TYPE == CODE_CMD_POWERSTEP01 )
@@ -187,10 +192,25 @@ void StepperControl::getResponse( QByteArray arr )
             qDebug() << "Move R Status: " << cmd.DATA.ERROR_OR_COMMAND;
             sendCommandPowerStep( CMD_PowerSTEP01_GET_ABS_POS, 0 );
         }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SOFT_HI_Z )
+        {
+            qDebug() << "Soft stop status: " << cmd.DATA.ERROR_OR_COMMAND;
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_SET_RELE )
+        {
+            isRelayOn = true;
+            emit isLineSwitchOn( isRelayOn );
+            qDebug() << "Set relay: " << cmd.DATA.ERROR_OR_COMMAND;
+        }
+        else if ( cmd.CMD_IDENTIFICATION == CMD_PowerSTEP01_CLR_RELE )
+        {
+            isRelayOn = false;
+            emit isLineSwitchOn( isRelayOn );
+            qDebug() << "Clear relay: " << cmd.DATA.ERROR_OR_COMMAND;
+        }
         else
         {
             qDebug() << "POWERSTEP01 ERROR_OR_COMMAND: " << cmd.DATA.ERROR_OR_COMMAND;
-
         }
     }
 }
@@ -210,9 +230,6 @@ void StepperControl::sendCommandPowerStep( CMD_PowerSTEP command, uint32_t data 
     QByteArray arr = serialize( cmd );
 
     emit writeCmdToPort( arr );
-
-//    qDebug() << "sendCommandPowerStep" << arr.toHex();
-
 }
 
 QByteArray StepperControl::serialize( out_message_t &cmd )
@@ -281,7 +298,7 @@ QByteArray StepperControl::serialize( request_message_t &cmd )
 in_message_t StepperControl::deserialize(const QByteArray& byteArray)
 {
     in_message_t cmd;
-//    qDebug() << "Stepper IN <<<" << byteArray.toHex();
+    qDebug() << "Stepper IN <<<" << byteArray.toHex();
 
     QByteArray localArray = byteArray;
     if( localArray.size() < 13 )
