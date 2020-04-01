@@ -94,6 +94,7 @@ private:
     double              currentPhaseB;
     double              currentPhaseC;
     double              resistance;
+    double              power;
     double              frequency;
     float               temperature;
 

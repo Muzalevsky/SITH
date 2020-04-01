@@ -38,8 +38,21 @@ MainWindow::MainWindow(QWidget *parent) :
     QTextCodec *codec = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(codec);
 
+    // Authorization
+    bool ok;
+    QString userName = QInputDialog::getText(this, tr("Вход"),
+                                         tr("Имя:"), QLineEdit::Normal,
+                                         nullptr, &ok);
+    if (ok && !userName.isEmpty()){
+        qDebug() << "Successful login" << userName;
+        ui->operatorNameEdit->setText(userName);
+    } else {
+        qDebug() << "Failed to login";
+        exit(EXIT_FAILURE);
+    }
+
     // Initialization
-    ui->currentPositionEdit->setText(QString::number(0.000001, 'f'));
+    ui->currentPositionEdit->setText(QString::number(0.000000, 'f'));
     ui->motorPositionEdit->setText(QString::number(0.000000, 'f'));
 
 
@@ -69,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     /*
      * AUTOSTOP callback
      */
-    ui->autoStopButton->setChecked(true);
+    ui->autoStopButton->setChecked(true);            
     stop_flag           = ui->autoStopButton->isChecked();
     connect( ui->autoStopButton, &QPushButton::clicked, this, &MainWindow::updateStopFlag );
     updateStopFlag(stop_flag);
@@ -251,20 +264,6 @@ MainWindow::MainWindow(QWidget *parent) :
              encoder_ui->port, &Port::reconnectPort, Qt::QueuedConnection );
 #endif
 
-
-    // Authorization
-    bool ok;
-    QString userName = QInputDialog::getText(this, tr("Вход"),
-                                         tr("Имя:"), QLineEdit::Normal,
-                                         nullptr, &ok);
-    if (ok && !userName.isEmpty()){
-        qDebug() << "Successful login" << userName;
-        ui->operatorNameEdit->setText(userName);
-    } else {
-        qDebug() << "Failed to login";
-        exit(EXIT_FAILURE);
-    }
-
     /*
      * Here we restore serial devices and window geometry
      */
@@ -333,6 +332,8 @@ void MainWindow::updateElectricParameters()
     frequency       = rs485_serial->frequency;
     resistance      = voltagePhaseA / currentPhaseA;
 
+    power           = rs485_serial->power;
+
     ui->voltageAEdit->setText( QString::number( voltagePhaseA ) );
     ui->voltageBEdit->setText( QString::number( voltagePhaseB ) );
     ui->voltageCEdit->setText( QString::number( voltagePhaseC ) );
@@ -341,6 +342,8 @@ void MainWindow::updateElectricParameters()
     ui->currentCEdit->setText( QString::number( currentPhaseC ) );
     ui->frequencyEdit->setText( QString::number( frequency ) );
     ui->resistanceEdit->setText( QString::number( resistance ) );
+    ui->powerEdit->setText( QString::number( power ) );
+
 }
 
 /***********************************************/
@@ -492,11 +495,16 @@ void MainWindow::updateStopFlag( bool checked )
     stop_flag = checked;
     qDebug() << "STOP state: " << stop_flag;
     if (stop_flag) {
+        ui->autoStopButton->setStyleSheet( "background-color: red;");
+
+
         ui->autoStartButton->setEnabled(false);
         ui->stepBackwardButton->setEnabled(false);
         ui->stepForwardButton->setEnabled(false);
         emit resetStepperSupply();
     } else {
+        ui->autoStopButton->setStyleSheet( "background-color: green;");
+
         ui->autoStartButton->setEnabled(true);
         ui->stepBackwardButton->setEnabled(true);
         ui->stepForwardButton->setEnabled(true);
@@ -731,6 +739,8 @@ void MainWindow::endMeasuring()
     measuringTimeoutTimer->stop();
 
     ui->autoStopButton->setChecked(true);
+    ui->autoStopButton->setStyleSheet( "background-color: red;");
+
     updateStopFlag(true);
 
     if (protocolFile) {
