@@ -4,9 +4,11 @@
 
 #include <QThread>
 
+#define RECONNECTION_RETRIES_NUMBER 20
 Port::Port(QObject *parent) :
     QObject(parent),
-    portMode(0)
+    portMode(0),
+    reconnect_counter(RECONNECTION_RETRIES_NUMBER)
 {
     /*
      * see https://doc-snapshots.qt.io/qt5-5.10/qserialport.html
@@ -24,18 +26,16 @@ Port::~Port()
     emit finished_Port();
 }
 
-//Q_DECLARE_METATYPE(QSerialPort::SerialPortError);
 void Port::process_Port()
 {
     qDebug() << "Serial port" << this
              << "in thread" << this->thread()
              << "parent" << parent();
 
-    qRegisterMetaType<QSerialPort::SerialPortError>("QSerialPort::SerialPortError");
+    //qRegisterMetaType<QSerialPort::SerialPortError>("QSerialPort::SerialPortError");
 
     connect(&thisPort, &QSerialPort::errorOccurred, this, &Port::handleError);
     connect(&thisPort, SIGNAL(readyRead()),this,SLOT(ReadInPort()));
-    connect(this, SIGNAL(error_(QString)), this, SLOT(errorHandler(QString)));
 }
 
 void Port::setPortSettings(QString name, int baudrate,int DataBits,
@@ -69,30 +69,58 @@ void Port::openPort()
         {
             if ( thisPort.isOpen() )
             {
-                error_(SettingsPort.name + " >> Открыт!");
+                qDebug() << SettingsPort.name + " >> Open!";
                 thisPort.clear();
                 emit connectionStateChanged(true);
+                reconnect_counter = RECONNECTION_RETRIES_NUMBER;
             }
         }
         else
         {
             thisPort.close();
-            error_(thisPort.errorString());
+            qDebug() << thisPort.errorString();
         }
     }
     else
     {
-        thisPort.close();
-        error_(thisPort.errorString());
+        qDebug() << thisPort.errorString();
     }
 }
 
 // TODO Check how it is working during deleting now
 void Port::handleError(QSerialPort::SerialPortError error)
 {
-    if ( (thisPort.isOpen()) /*&& (error == QSerialPort::ResourceError)*/ ) {
-        error_(thisPort.errorString());
-        reconnectPort();
+    if ( error != QSerialPort::NoError )
+        qDebug() << thisPort.portName() << "Error:" <<  thisPort.errorString();
+
+    switch ( error )
+    {
+        /*
+         * An error occurred while attempting to open an non-existing device.
+         */
+        case QSerialPort::DeviceNotFoundError:
+            thisPort.close();
+            emit connectionStateChanged(false);
+        break;
+
+        /*
+         * An I/O error occurred when a resource becomes unavailable, e.g.
+         * when the device is unexpectedly removed from the system.
+         */
+        case QSerialPort::ResourceError:
+            thisPort.close();
+            emit connectionStateChanged(false);
+        break;
+
+        case QSerialPort::TimeoutError:
+            emit connectionStateChanged(false);
+            if ( (thisPort.isOpen()) ) {
+                reconnectPort();
+            }
+        break;
+
+        default:
+        break;
     }
 }
 
@@ -101,7 +129,7 @@ void Port::closePort()
     if ( thisPort.isOpen() ) {
         thisPort.clear( QSerialPort::AllDirections );
         thisPort.close();
-        error_(SettingsPort.name + " >> Закрыт!\r");
+        qDebug() << SettingsPort.name << " >> Close!";
         emit connectionStateChanged(false);
     }
 }
@@ -124,11 +152,6 @@ void Port::ReadInPort()
     }
 }
 
-void Port::errorHandler( QString err )
-{
-    qDebug() << err;
-}
-
 void Port::connect_clicked()
 {
     if ( thisPort.isOpen() ) {
@@ -145,6 +168,10 @@ bool Port::isOpened()
 
 void Port::reconnectPort()
 {
-    closePort();
-    openPort();
+    if ( reconnect_counter > 0 )
+    {
+        closePort();
+        openPort();
+        reconnect_counter--;
+    }
 }

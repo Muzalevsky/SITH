@@ -1,9 +1,7 @@
 #ifndef ENCODERCONTROL_H
 #define ENCODERCONTROL_H
 
-//#include <QWidget>
 #include <QObject>
-//#include <QMainWindow>
 
 #include <port.h>
 #include <settingsdialog.h>
@@ -21,6 +19,7 @@ public:
     int             zero_mark_number;
     float           position_mm;
     float           final_position_mm;
+    float           prev_final_position_mm;
     int             prev_position_raw;
     int             position_raw;
     int             delta;

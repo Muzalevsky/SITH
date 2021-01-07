@@ -77,6 +77,7 @@ void EncoderControl::saveSettings()
 void EncoderControl::analyzePosition( QString str )
 {
     prev_position_raw = position_raw;
+    prev_final_position_mm = final_position_mm;
 
     /*
      * Trying to convert string
@@ -102,7 +103,8 @@ void EncoderControl::analyzePosition( QString str )
 
     final_position_mm = zero_position_offset + position_mm;
 
-    if ( delta != 0 && ok ) {
+    float delta_mm = prev_final_position_mm - final_position_mm;
+    if ( delta != 0 && ok && (delta_mm != 0) ) {
 //        qDebug() << "prev:" << prev_position_raw
 //                 << "current:" << position_raw
 //                 << "delta: " << delta

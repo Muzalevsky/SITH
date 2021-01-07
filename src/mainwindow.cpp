@@ -8,10 +8,10 @@
 #include <QTextCodec>
 #include <QThread>
 
+#include <cmath>
+
 #define MSEC_BETWEEN_STEPS 1500
 #define STATEOBSERVER_INTERVAL_MSEC 300
-
-//#define DISABLE_ENCODER_CHECKING
 
 /***********************************************/
 MainWindow::MainWindow(QWidget *parent) :
@@ -38,8 +38,21 @@ MainWindow::MainWindow(QWidget *parent) :
     QTextCodec *codec = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(codec);
 
+    // Authorization
+    bool ok;
+    QString userName = QInputDialog::getText(this, tr("Вход"),
+                                         tr("Имя:"), QLineEdit::Normal,
+                                         nullptr, &ok);
+    if (ok && !userName.isEmpty()){
+        qDebug() << "Successful login" << userName;
+        ui->operatorNameEdit->setText(userName);
+    } else {
+        qDebug() << "Failed to login";
+        exit(EXIT_FAILURE);
+    }
+
     // Initialization
-    ui->currentPositionEdit->setText(QString::number(0.000001, 'f'));
+    ui->currentPositionEdit->setText(QString::number(0.000000, 'f'));
     ui->motorPositionEdit->setText(QString::number(0.000000, 'f'));
 
 
@@ -49,27 +62,24 @@ MainWindow::MainWindow(QWidget *parent) :
     encoder_ui          = new EncoderControl();
 
     // Mode choosing
-    ui->modeComboBox->addItem( "Ручной" );
-    ui->modeComboBox->addItem( "Полуавтомат" );
-    ui->modeComboBox->addItem( "Автомат" );
+    ui->modeComboBox->addItem(tr("Ручной"));
+    ui->modeComboBox->addItem(tr("Полуавтомат"));
+    ui->modeComboBox->addItem(tr("Автомат"));
     connect( ui->modeComboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( modeChanged(int) ) );
     ui->modeComboBox->setCurrentIndex( 1 );
 
-
 //    connect(ui->connectAllDevicesButton, &QPushButton::clicked, this, &MainWindow::connectToAllDevices);
-
 
     // Settings saving
     connect( ui->saveSettingsButton, &QPushButton::clicked, this, &MainWindow::writeSettings );
     connect( ui->loadSettingsButton, &QPushButton::clicked, this, &MainWindow::loadSettings );
-    //    settings = new QSettings(  ORGANIZATION_NAME, APPLICATION_NAME );
     settings = new QSettings( "settings.ini", QSettings::IniFormat );
 
 
     /*
      * AUTOSTOP callback
      */
-    ui->autoStopButton->setChecked(true);
+    ui->autoStopButton->setChecked(true);            
     stop_flag           = ui->autoStopButton->isChecked();
     connect( ui->autoStopButton, &QPushButton::clicked, this, &MainWindow::updateStopFlag );
     updateStopFlag(stop_flag);
@@ -161,10 +171,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateTime() ) );
     connect( update_timer, SIGNAL( timeout() ), this, SLOT( updateState() ) );
 
-//    motorSupplyOffTimer = new QTimer(this);
-//    connect( overForceTimer, SIGNAL( timeout() ), stepper_ui, SLOT( resetMotorSupply()) );
-//    motorSupplyOffTimer->singleShot(2000, stepper_ui, SLOT( resetMotorSupply()));
-
     connect(this, &MainWindow::tooMuchForce,
             stepper_ui, &StepperControl::resetMotorSupply, Qt::QueuedConnection);
 
@@ -251,20 +257,6 @@ MainWindow::MainWindow(QWidget *parent) :
              encoder_ui->port, &Port::reconnectPort, Qt::QueuedConnection );
 #endif
 
-
-    // Authorization
-    bool ok;
-    QString userName = QInputDialog::getText(this, tr("Вход"),
-                                         tr("Имя:"), QLineEdit::Normal,
-                                         nullptr, &ok);
-    if (ok && !userName.isEmpty()){
-        qDebug() << "Successful login" << userName;
-        ui->operatorNameEdit->setText(userName);
-    } else {
-        qDebug() << "Failed to login";
-        exit(EXIT_FAILURE);
-    }
-
     /*
      * Here we restore serial devices and window geometry
      */
@@ -333,6 +325,8 @@ void MainWindow::updateElectricParameters()
     frequency       = rs485_serial->frequency;
     resistance      = voltagePhaseA / currentPhaseA;
 
+    power           = rs485_serial->power;
+
     ui->voltageAEdit->setText( QString::number( voltagePhaseA ) );
     ui->voltageBEdit->setText( QString::number( voltagePhaseB ) );
     ui->voltageCEdit->setText( QString::number( voltagePhaseC ) );
@@ -341,6 +335,8 @@ void MainWindow::updateElectricParameters()
     ui->currentCEdit->setText( QString::number( currentPhaseC ) );
     ui->frequencyEdit->setText( QString::number( frequency ) );
     ui->resistanceEdit->setText( QString::number( resistance ) );
+    ui->powerEdit->setText( QString::number( power ) );
+
 }
 
 /***********************************************/
@@ -355,9 +351,9 @@ void MainWindow::connect_clicked()
 {
     if ( sender() == ui->forceConnectButton )
     {
-            force_ui->portName = ui->forceComboBox->currentText();
-            force_ui->saveSettings();
-            qDebug() << "force port " << force_ui->portName;
+        force_ui->portName = ui->forceComboBox->currentText();
+        force_ui->saveSettings();
+        qDebug() << "force port " << force_ui->portName;
         force_ui->port->connect_clicked();
     }
     else if ( sender() == ui->stepperConnectButton )
@@ -392,42 +388,42 @@ void MainWindow::changeButtonText(bool state)
     if ( sender() == force_ui->port )
     {
         if ( state ) {
-            ui->forceConnectButton->setText( "Отключить" );
+            ui->forceConnectButton->setText(tr("Отключить"));
         } else {
-            ui->forceConnectButton->setText( "Подключить" );
+            ui->forceConnectButton->setText(tr("Подключить"));
         }
     }
     else if ( sender() == stepper_ui->port  )
     {
         if ( state ) {
-            ui->stepperConnectButton->setText( "Отключить" );
+            ui->stepperConnectButton->setText(tr("Отключить"));
         } else {
-            ui->stepperConnectButton->setText( "Подключить" );
+            ui->stepperConnectButton->setText(tr("Подключить"));
         }
     }
     else if ( sender() == rs485_serial )
     {
         if ( state ) {
-            ui->modbusConnectButton->setText( "Отключить" );
+            ui->modbusConnectButton->setText(tr("Отключить"));
         } else {
-            ui->modbusConnectButton->setText( "Подключить" );
+            ui->modbusConnectButton->setText(tr("Подключить"));
         }
     }
     else if ( sender() == encoder_ui->port )
     {
         if ( state ) {
-            ui->encoderConnectButton->setText( "Отключить" );
+            ui->encoderConnectButton->setText(tr("Отключить"));
         } else {
-            ui->encoderConnectButton->setText( "Подключить" );
+            ui->encoderConnectButton->setText(tr("Подключить"));
         }
     }
     else if ( sender() == stepper_ui  )
     {
-            if ( state ) {
-                ui->lineSwitchButton->setText( "Снять напряжение" );
-            } else {
-                ui->lineSwitchButton->setText( "Подать напряжение" );
-            }
+        if ( state ) {
+            ui->lineSwitchButton->setText(tr("Снять напряжение"));
+        } else {
+            ui->lineSwitchButton->setText(tr("Подать напряжение"));
+        }
     }
 
 }
@@ -492,11 +488,13 @@ void MainWindow::updateStopFlag( bool checked )
     stop_flag = checked;
     qDebug() << "STOP state: " << stop_flag;
     if (stop_flag) {
+        ui->autoStopButton->setStyleSheet("background-color: red;");
         ui->autoStartButton->setEnabled(false);
         ui->stepBackwardButton->setEnabled(false);
         ui->stepForwardButton->setEnabled(false);
         emit resetStepperSupply();
     } else {
+        ui->autoStopButton->setStyleSheet("background-color: green;");
         ui->autoStartButton->setEnabled(true);
         ui->stepBackwardButton->setEnabled(true);
         ui->stepForwardButton->setEnabled(true);
@@ -702,8 +700,8 @@ void MainWindow::measureNextPoint()
         }
 
         stepDoneNumber++;
-        ui->pointsLeftEdit->setText( QString::number( stepNumber - stepDoneNumber ) );
-        setStateButtonColor( Qt::green );
+        ui->pointsLeftEdit->setText(QString::number(stepNumber - stepDoneNumber));
+        setStateButtonColor(Qt::green);
     }
     else
     {
@@ -731,6 +729,8 @@ void MainWindow::endMeasuring()
     measuringTimeoutTimer->stop();
 
     ui->autoStopButton->setChecked(true);
+    ui->autoStopButton->setStyleSheet("background-color: red;");
+
     updateStopFlag(true);
 
     if (protocolFile) {
@@ -759,7 +759,7 @@ void MainWindow::calculateStepNumber( double val )
 
     if ( ui->stepSizeBox->value() != 0 ) {
         stepNumber = static_cast<int>(ui->workingStrokeBox->value() / ui->stepSizeBox->value() );
-        ui->stepNumberEdit->setText( QString::number( stepNumber ) );
+        ui->stepNumberEdit->setText(QString::number(stepNumber));
     }
 
     double steps_n = ui->stepSizeBox->value() * stepper_ui->step_per_mm;
@@ -835,21 +835,21 @@ int MainWindow::checkConnectionStates()
 {
     if ( !force_ui->port->isOpened() ) {
        QMessageBox msgBox;
-       msgBox.setText("Отсутствует связь с весовым терминалом");
+       msgBox.setText(tr("Отсутствует связь с весовым терминалом"));
        msgBox.exec();
        return -1;
     }
 
     if ( !stepper_ui->port->isOpened() ) {
        QMessageBox msgBox;
-       msgBox.setText("Отсутствует связь с драйвером двигателя");
+       msgBox.setText(tr("Отсутствует связь с драйвером двигателя"));
        msgBox.exec();
        return -2;
     }
 
     if ( !rs485_serial->isModbusConnected() ) {
        QMessageBox msgBox;
-       msgBox.setText("Отсутствует интерфейс RS485");
+       msgBox.setText(tr("Отсутствует интерфейс RS485"));
        msgBox.exec();
        return -3;
     }
@@ -857,7 +857,7 @@ int MainWindow::checkConnectionStates()
 #ifndef DISABLE_ENCODER_CHECKING
     if ( !encoder_ui->port->isOpened() ) {
        QMessageBox msgBox;
-       msgBox.setText("Отсутствует связь с энкодером");
+       msgBox.setText(tr("Отсутствует связь с энкодером"));
        msgBox.exec();
        return -4;
     }
@@ -903,18 +903,16 @@ void MainWindow::setStateButtonColor(int colorCode)
     switch (colorCode) {
         default:
         case Qt::red:
-            ui->connectionStateButton->setStyleSheet( "background-color: red;");
+            ui->connectionStateButton->setStyleSheet("background-color: red;");
             break;
-
         case Qt::yellow:
-            ui->connectionStateButton->setStyleSheet( "background-color: yellow;");
+            ui->connectionStateButton->setStyleSheet("background-color: yellow;");
             break;
-
         case Qt::green:
-            ui->connectionStateButton->setStyleSheet( "background-color: green;");
+            ui->connectionStateButton->setStyleSheet("background-color: green;");
             break;
         case Qt::blue:
-            ui->connectionStateButton->setStyleSheet( "background-color: blue;");
+            ui->connectionStateButton->setStyleSheet("background-color: blue;");
             break;
     }
 }

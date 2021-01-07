@@ -4,7 +4,7 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QTimer>
-#include <QMutex>
+
 struct Settings {
     QString name;
     qint32 baudRate;
@@ -29,9 +29,9 @@ public:
 
 private:
     int portMode;
+    int reconnect_counter;
 signals:
     void finished_Port();
-    void error_(QString err);
     void outPortString(QString data);
     void outPortByteArray(QByteArray data);
     void connectionStateChanged(bool isConnected);
@@ -48,9 +48,6 @@ public slots:
 
 private slots:
     void handleError(QSerialPort::SerialPortError error);
-    void errorHandler(QString);
-public:
-
 };
 
 #endif // PORT_H

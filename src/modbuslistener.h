@@ -2,11 +2,9 @@
 #define MODBUSLISTENER_H
 
 #include <QModbusDataUnit>
-#include <QMainWindow>
 #include <QTimer>
 
 #include <settingsdialog.h>
-QT_BEGIN_NAMESPACE
 
 class QModbusClient;
 class QModbusReply;
@@ -15,11 +13,11 @@ namespace Ui {
 class SettingsDialog;
 }
 
-class ModbusListener : public QMainWindow
+class ModbusListener : public QObject
 {
     Q_OBJECT
 public:
-    explicit ModbusListener(QWidget *parent = nullptr);
+    explicit ModbusListener(QObject *parent = nullptr);
     ~ModbusListener();
     QModbusDataUnit readRequest() const;
 
@@ -27,31 +25,32 @@ public:
     bool isModbusAlive();
 
     const QModbusDataUnit *unit;
-    QStringList *strList;
+
     double voltagePhaseA;
     double voltagePhaseB;
     double voltagePhaseC;
-
     double currentPhaseA;
     double currentPhaseB;
     double currentPhaseC;
-
     double frequency;
-
-    float temperature;
+    double power;
+    float  temperature;
 
     SettingsDialog *m_settingsDialog;
     QModbusClient *modbusDevice;
 
     QString     portName;
 private:
+    const int temperature_sensor_address = 1;
+    const int electrical_sensor_address = 2;
+
     bool        m_connected;
     bool        _alive;
 
     QTimer      *timer;
     int         slaveNumber;
-    void initActions();
     QModbusReply *lastRequest;
+
 public slots:
     void on_connectButton_clicked();
     void updateSlaveNumber( int number );
@@ -60,7 +59,6 @@ private slots:
     void onStateChanged(int state);
     void on_readButton_clicked();
     void readReady();
-    void on_connectType_currentIndexChanged(int);
 signals:
     void getReply();
     void getTemperature();

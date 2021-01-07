@@ -1,38 +1,32 @@
 #include "modbuslistener.h"
-#include "ui_modbuslistener.h"
 #include "settingsdialog.h"
 
 #include <QModbusRtuSerialMaster>
-#include <QStandardItemModel>
-#include <QStatusBar>
-
 #include <QDebug>
-#include <QPointer>
-#include <QtEndian>
 
-const int temperature_sensor_address = 1;
-const int electrical_sensor_address = 2;
-
-enum ModbusConnection {
-    Serial
-};
-
-ModbusListener::ModbusListener(QWidget *parent)
-    : QMainWindow(parent),
+ModbusListener::ModbusListener(QObject *parent)
+    : QObject(parent),
       modbusDevice(nullptr),
-      lastRequest(nullptr),
-      _alive(false)
+      _alive(false),
+      lastRequest(nullptr)
 {
     slaveNumber = 0;
     timer = new QTimer();
     timer->setInterval(270);
     connect( timer, &QTimer::timeout, this, &ModbusListener::on_readButton_clicked );
 
-    m_settingsDialog = new SettingsDialog(this);
-    on_connectType_currentIndexChanged(0);
+    m_settingsDialog = new SettingsDialog();
 
-    strList = new QStringList();
+    modbusDevice = new QModbusRtuSerialMaster(this);
 
+    connect(modbusDevice, &QModbusClient::errorOccurred,
+            [this](QModbusDevice::Error) { qDebug() << modbusDevice->errorString(); } );
+
+    connect(modbusDevice, &QModbusClient::stateChanged,
+            this, &ModbusListener::onStateChanged);
+
+    if (!modbusDevice)
+        qDebug() << tr("Could not create Modbus master.");
 }
 
 ModbusListener::~ModbusListener()
@@ -40,29 +34,6 @@ ModbusListener::~ModbusListener()
     if (modbusDevice)
         modbusDevice->disconnectDevice();
     delete modbusDevice;
-}
-
-void ModbusListener::on_connectType_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    if (modbusDevice) {
-        modbusDevice->disconnectDevice();
-        delete modbusDevice;
-        modbusDevice = nullptr;
-    }
-
-    modbusDevice = new QModbusRtuSerialMaster(this);
-
-    connect(modbusDevice, &QModbusClient::errorOccurred, [this](QModbusDevice::Error) {
-        qDebug() << modbusDevice->errorString(); } );
-
-    if (!modbusDevice)
-    {
-        qDebug() << tr("Could not create Modbus master.");
-    } else {
-        connect(modbusDevice, &QModbusClient::stateChanged,
-                this, &ModbusListener::onStateChanged);
-    }
 }
 
 void ModbusListener::on_connectButton_clicked()
@@ -145,8 +116,8 @@ void ModbusListener::readReady()
     if (reply->error() == QModbusDevice::NoError)
     {
         const QModbusDataUnit unit = reply->result();
-        strList->clear();
-        if ( reply->serverAddress() == temperature_sensor_address ) {
+        if ( reply->serverAddress() == temperature_sensor_address )
+        {
             uint32_t byte[4];
             byte[0] = (uint32_t)( (unit.value(2)) << 48 );
             byte[1] = (uint32_t)( (unit.value(3)) << 32 );
@@ -158,56 +129,73 @@ void ModbusListener::readReady()
             temperature = *reinterpret_cast<float*>(&temp);
             _alive = true;
             emit getTemperature();
-        } else if ( reply->serverAddress() == electrical_sensor_address ) {
+        }
+        else if ( reply->serverAddress() == electrical_sensor_address )
+        {
             for (uint i = 0; i < unit.valueCount(); i++)
             {
                 const QString entry = tr("%1").arg(QString::number(unit.value(i), 10 ));
-                strList->append( entry );
-
-                if ( i == 34 )
-                    voltagePhaseA = entry.toDouble() / 10;
-                if ( i == 35)
-                    voltagePhaseB = entry.toDouble() / 10;
-                if ( i == 36)
-                    voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 37){
-                }
-                    //Linear voltage
-                    //voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 38){
-                }
-                    //Linear voltage
-                    //voltagePhaseC = entry.toDouble() / 10;
-                if ( i == 39){
-                }
-                    //Linear voltage
-                    //voltagePhaseC = entry.toDouble() / 10;
-
-
-                if ( i == 40 )
-                    currentPhaseA = entry.toDouble() * 8 / 1000;
-                if ( i == 41 )
-                    currentPhaseB = entry.toDouble() * 8 / 1000;
-                if ( i == 42 )
-                    currentPhaseC = entry.toDouble() * 8 / 1000;
-
-
-
-                if ( i == 43 )
-                    frequency = entry.toDouble() / 100;
-
-                if ( i == 47 )
+                switch (i)
                 {
-                    //cos fi
-//                    frequency = entry.toDouble() / 100;
+                    case 0x22:
+                        voltagePhaseA = entry.toDouble() / 10;
+                    break;
+
+                    case 0x23:
+                        voltagePhaseB = entry.toDouble() / 10;
+                    break;
+
+                    case 0x24:
+                        voltagePhaseC = entry.toDouble() / 10;
+                    break;
+
+                    /*
+                     * According to documentation from 2020,
+                     * it is real phase voltage
+                     */
+                    case 0x25:
+                        //voltagePhaseA = entry.toDouble() / 10;
+                    break;
+
+                    case 0x26:
+                        //voltagePhaseB = entry.toDouble() / 10;
+                    break;
+
+                    case 0x27:
+                        //voltagePhaseC = entry.toDouble() / 10;
+                    break;
+
+                    case 0x28:
+                        currentPhaseA = entry.toDouble() * 8 / 1000;
+                    break;
+
+                    case 0x29:
+                        currentPhaseB = entry.toDouble() * 8 / 1000;
+                    break;
+
+                    case 0x2A:
+                        currentPhaseC = entry.toDouble() * 8 / 1000;
+                    break;
+
+                    case 0x2B:
+                        frequency = entry.toDouble() / 100;
+                    break;
+
+                    case 0x2C:
+                        power = entry.toDouble();
+                    break;
+
+                    default:
+                    break;
                 }
 
-
+                _alive = true;
+                emit getReply();
             }
-            _alive = true;
-            emit getReply();
         }
-    } else if (reply->error() == QModbusDevice::ProtocolError) {
+    }
+    else if (reply->error() == QModbusDevice::ProtocolError)
+    {
         _alive = false;
         qDebug() << tr("Read response error: ") << reply->errorString()
                  << "Modbus exception:" << reply->rawResult().exceptionCode();
@@ -220,19 +208,6 @@ void ModbusListener::readReady()
 
     reply->deleteLater();
 }
-
-//QModbusDataUnit ModbusListener::readRequest() const
-//{
-//    auto table = QModbusDataUnit::HoldingRegisters;
-//    int startAddress = 0;
-//    int numberOfEntries = 50;
-
-//    if ( slaveNumber == 1 ) {
-//        table = QModbusDataUnit::InputRegisters;
-//        numberOfEntries = 4;
-//    }
-//    return QModbusDataUnit(table, startAddress, numberOfEntries);
-//}
 
 void ModbusListener::updateSlaveNumber( int number )
 {
@@ -256,27 +231,25 @@ void ModbusListener::reconnectModbus()
 
     modbusDevice->disconnectDevice();
 
-    {
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
-            portName );
+    modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
+        portName );
 
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,
-            m_settingsDialog->settings().parity);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
-            m_settingsDialog->settings().baud);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
-            m_settingsDialog->settings().dataBits);
-        modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
-            m_settingsDialog->settings().stopBits);
+    modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter,
+        m_settingsDialog->settings().parity);
+    modbusDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
+        m_settingsDialog->settings().baud);
+    modbusDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
+        m_settingsDialog->settings().dataBits);
+    modbusDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
+        m_settingsDialog->settings().stopBits);
 
-        modbusDevice->setTimeout(m_settingsDialog->settings().responseTime);
-        modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
+    modbusDevice->setTimeout(m_settingsDialog->settings().responseTime);
+    modbusDevice->setNumberOfRetries(m_settingsDialog->settings().numberOfRetries);
 
-        if (!modbusDevice->connectDevice()) {
-            qDebug() << tr("Connect failed: ") << modbusDevice->errorString();
-        } else {
-            timer->start();
-        }
+    if (!modbusDevice->connectDevice()) {
+        qDebug() << tr("Connect failed: ") << modbusDevice->errorString();
+    } else {
+        timer->start();
     }
 
 }

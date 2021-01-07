@@ -17,8 +17,6 @@
 #include "forcewindow.h"
 #include "encodercontrol.h"
 
-#define ORGANIZATION_NAME "LETI"
-#define ORGANIZATION_DOMAIN "www.etu.ru"
 #define APPLICATION_NAME "SITH Control program"
 
 enum WorkingModes
@@ -53,9 +51,6 @@ private:
     int isSerialAlive();
     void setStateButtonColor(int colorCode);
 
-//    void updatePositionFromEncoder();
-//    void updateForceFromTensoHead();
-
     void closeEvent(QCloseEvent *event);
 
     QWidget             *mainwidget;
@@ -63,10 +58,6 @@ private:
 
     QFile               *protocolFile;
     QFile               *protocolCsvFile;
-
-//    Port                *force_serial;
-    Port                *stepper_serial;
-//    Port                *encoder_serial;
 
     ModbusListener      *rs485_serial;
     EncoderControl      *encoder_ui;
@@ -86,7 +77,6 @@ private:
     float               manualPosition;
     float               manualCurrentPosition;
 
-
     double              voltagePhaseA;
     double              voltagePhaseB;
     double              voltagePhaseC;
@@ -94,6 +84,7 @@ private:
     double              currentPhaseB;
     double              currentPhaseC;
     double              resistance;
+    double              power;
     double              frequency;
     float               temperature;
 
